@@ -8,13 +8,13 @@
         ],
         "additionalFields": {}
       },
-      "id": "9ad1f066-37c3-4bc4-9269-dc4846c909d6",
+      "id": "e4c2f0e1-c4c4-481d-b630-7680a73e71e9",
       "name": "Jira Trigger - New Bug Created",
       "type": "n8n-nodes-base.jiraTrigger",
       "typeVersion": 1,
       "position": [
-        80544,
-        13568
+        85328,
+        20400
       ],
       "webhookId": "jira-bug-webhook",
       "alwaysOutputData": false,
@@ -56,13 +56,13 @@
         },
         "options": {}
       },
-      "id": "ff5d727a-6f81-486c-b043-6a51604f0e9f",
+      "id": "3336141a-20f9-472f-b40f-5c26502f3f8f",
       "name": "Check if Bug Ticket",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        80656,
-        13744
+        85520,
+        20576
       ]
     },
     {
@@ -85,13 +85,13 @@
         },
         "options": {}
       },
-      "id": "cc66b71c-6dba-40be-84ea-301affca9bf8",
+      "id": "08889460-1ed1-4c7b-877b-9729c99a6303",
       "name": "Check if Already Triaged",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        80832,
-        13744
+        85696,
+        20576
       ]
     },
     {
@@ -102,13 +102,13 @@
           "labels": "={{ (() => { const labels = $input.first().json.issue?.fields?.labels || $input.first().json.fields?.labels || $input.first().json.body?.issue?.fields?.labels || $input.first().json.body?.fields?.labels || []; return Array.isArray(labels) ? [...labels.filter(l => l !== 'auto-triaged'), 'auto-triaged'] : (labels ? labels.split(', ').filter(l => l && l !== 'auto-triaged').concat(['auto-triaged']) : ['auto-triaged']); })() }}"
         }
       },
-      "id": "044a015d-a18f-40a2-a88c-6981d040f6e7",
+      "id": "94a99ccd-4cda-4b3b-8265-b34bdeff8036",
       "name": "Mark as Processing",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        81024,
-        13744
+        85888,
+        20576
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -127,13 +127,13 @@
           "jql": "=project in (PRODBUGS, DEVBUGS, \"Andrew Bug Test\") AND issuetype = Bug AND status != Closed AND status != Resolved AND created >= -90d ORDER BY created DESC"
         }
       },
-      "id": "424b6324-9fc4-4078-a3f4-40e8a7578cba",
+      "id": "afc41cd2-e22d-47e5-982a-8ada6ce8ca8a",
       "name": "Get Recent Bug Tickets",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        80848,
-        13568
+        85712,
+        20400
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -210,39 +210,39 @@
         },
         "options": {}
       },
-      "id": "0d01d3dd-e86e-476f-b802-1d6cbe2c8b54",
+      "id": "08da659c-74e6-48dc-a8e0-c1703175eb59",
       "name": "Extract New Ticket Data",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
       "position": [
-        81184,
-        13744
+        86048,
+        20576
       ]
     },
     {
       "parameters": {
         "jsCode": "// Get the new ticket data from Extract New Ticket Data node\nconst newTicket = $('Extract New Ticket Data').item.json;\nconst newTicketKey = newTicket.newTicketKey;\n\n// Debug: Log the extracted data to help troubleshoot\n// console.log('Extracted ticket data:', JSON.stringify(newTicket, null, 2));\n\n// Get all existing tickets from Get Recent Bug Tickets node, EXCLUDING the new ticket\nconst existingTickets = $input.all()\n  .filter(item => item.json.key !== newTicketKey) // Filter out the new ticket\n  .map(item => ({\n    key: item.json.key,\n    summary: item.json.fields.summary,\n    description: (item.json.fields.description || '').substring(0, 300),\n    status: item.json.fields.status.name,\n    components: item.json.fields.components?.map(c => c.name).join(', ') || 'None',\n    labels: item.json.fields.labels?.join(', ') || 'None',\n    created: item.json.fields.created\n  }));\n\n// Parse attachments and identify log files\nconst attachments = newTicket.newTicketAttachments ? (typeof newTicket.newTicketAttachments === 'string' ? JSON.parse(newTicket.newTicketAttachments) : newTicket.newTicketAttachments) : [];\nconst logFileExtensions = ['.log', '.txt', '.out', '.err', '.debug', '.trace'];\nconst logFiles = attachments.filter(att => {\n  const filename = (att.filename || att.name || '').toLowerCase();\n  return logFileExtensions.some(ext => filename.endsWith(ext)) || \n         filename.includes('log') || \n         filename.includes('error') || \n         filename.includes('debug');\n}).slice(0, 3); // Limit to first 3 log files\n\nreturn {\n  json: {\n    newTicketKey: newTicket.newTicketKey,\n    newTicketSummary: newTicket.newTicketSummary,\n    newTicketDescription: newTicket.newTicketDescription,\n    newTicketReporter: newTicket.newTicketReporter,\n    newTicketPriority: newTicket.newTicketPriority,\n    newTicketComponents: newTicket.newTicketComponents,\n    newTicketLabels: newTicket.newTicketLabels,\n    newTicketAttachments: attachments,\n    logFiles: logFiles,\n    hasLogFiles: logFiles.length > 0,\n    jiraBaseUrl: newTicket.jiraBaseUrl,\n    existingTickets: existingTickets,\n    existingTicketsCount: existingTickets.length\n  }\n};"
       },
-      "id": "4138bfeb-5457-43cf-9494-ebb3ab09c99d",
+      "id": "1cff3c91-1286-412a-b1d5-25fdf115e30b",
       "name": "Prepare Data for Analysis",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        81040,
-        13584
+        85904,
+        20416
       ]
     },
     {
       "parameters": {
         "jsCode": "// Pass through ticket data with log file information\nreturn $input.all().map(item => ({ json: item.json }));"
       },
-      "id": "3010b784-761f-4c6d-97c5-98a8a5e5d575",
+      "id": "cdcb150c-d3a1-4fd2-8701-5ca0f32a8cc8",
       "name": "Fetch Log File Content",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        81200,
-        13584
+        86064,
+        20416
       ]
     },
     {
@@ -258,13 +258,13 @@
           }
         }
       },
-      "id": "f28813f3-2483-4e0a-8558-8a905610cf9e",
+      "id": "68c90b12-ae5c-470d-a41f-b9921abe264c",
       "name": "Download Log File",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        81360,
-        13584
+        86224,
+        20416
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -278,13 +278,13 @@
       "parameters": {
         "jsCode": "// Combine log file content with ticket data\n// Get ticket data from Prepare Data for Analysis (before log file download)\nconst ticketData = $('Prepare Data for Analysis').item.json;\nconst logContent = $input.first().json;\n\n// Extract log content (limit to 30000 chars to avoid token limits)\nlet logFileContent = '';\nif (logContent && typeof logContent === 'string') {\n  logFileContent = logContent.substring(0, 30000);\n} else if (logContent && logContent.body) {\n  logFileContent = String(logContent.body).substring(0, 30000);\n} else if (logContent && typeof logContent === 'object') {\n  logFileContent = JSON.stringify(logContent).substring(0, 30000);\n}\n\n// Prepare log file info\nconst logFiles = ticketData.logFiles || [];\nlet logFileInfo = '';\nif (logFiles.length > 0) {\n  logFileInfo = logFiles.map((file, idx) => {\n    return `${idx + 1}. ${file.filename || 'unknown'} (${file.size || 0} bytes)`;\n  }).join('\\n');\n}\n\nreturn {\n  json: {\n    ...ticketData,\n    logFileContent: logFileContent,\n    logFileInfo: logFileInfo,\n    hasLogContent: logFileContent.length > 0,\n    logFileCount: logFiles.length\n  }\n};"
       },
-      "id": "114205a7-6eed-4691-a837-17453f930943",
+      "id": "141ede4c-4623-41b5-bc44-f861ec6cc6cc",
       "name": "Prepare Log File Info",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        81520,
-        13584
+        86384,
+        20416
       ]
     },
     {
@@ -298,7 +298,7 @@
         "messages": {
           "values": [
             {
-              "content": "=You are a bug triage assistant analyzing potential duplicate tickets. You MUST respond with ONLY valid JSON, no explanations.\n\n**NEW TICKET:**\n- Key: {{ $json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $json.newTicketSummary || 'No summary' }}\n- Description: {{ ($json.newTicketDescription || 'No description').substring(0, 500) }}\n- Components: {{ $json.newTicketComponents || 'None' }}\n- Labels: {{ $json.newTicketLabels || 'None' }}\n{{ $json.hasLogFiles ? '\\n- Log Files Attached (' + $json.logFileCount + '):\\n' + $json.logFileInfo : '' }}\n{{ $json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 10000 chars):**\\n' + ($json.logFileContent || '').substring(0, 10000) : '' }}\n\n**EXISTING TICKETS (Last 90 days, {{ $json.existingTicketsCount || 0 }} total):**\n{{ ($json.existingTickets || []).slice(0, 15).map((ticket, i) => `${i + 1}. [${ticket.key}] ${ticket.summary}\\n   Status: ${ticket.status} | Components: ${ticket.components}\\n   Description: ${ticket.description}...\\n`).join('\\n') || 'No existing tickets found.' }}\n\n**TASK:**\nAnalyze if the new ticket is a potential duplicate. If log files are attached and their content is provided above, use the log file content (error messages, stack traces, etc.) to help identify similar issues. If you cannot determine, set isDuplicate to false with low confidence.\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"isDuplicate\": false, \"confidence\": \"low\", \"potentialDuplicates\": [], \"reasoning\": \"Brief explanation\", \"similarityScore\": 0}"
+              "content": "=You are a bug triage assistant analyzing potential duplicate tickets. You MUST respond with ONLY valid JSON, no explanations.\n\n**CRITICAL: ONLY ANALYZE WHAT IS ACTUALLY PROVIDED**\n- DO NOT invent, hallucinate, or make up errors, issues, or problems that are not explicitly stated in the ticket\n- DO NOT analyze log files for errors that are not actually present in the log content provided\n- ONLY base your analysis on the actual ticket summary, description, and log file content (if provided)\n- If information is missing or unclear, state that in your reasoning - do not make assumptions about what the error might be\n\n**NEW TICKET:**\n- Key: {{ $json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $json.newTicketSummary || 'No summary' }}\n- Description: {{ ($json.newTicketDescription || 'No description').substring(0, 500) }}\n- Components: {{ $json.newTicketComponents || 'None' }}\n- Labels: {{ $json.newTicketLabels || 'None' }}\n{{ $json.hasLogFiles ? '\\n- Log Files Attached (' + $json.logFileCount + '):\\n' + $json.logFileInfo : '' }}\n{{ $json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 10000 chars):**\\n' + ($json.logFileContent || '').substring(0, 10000) : '' }}\n\n**EXISTING TICKETS (Last 90 days, {{ $json.existingTicketsCount || 0 }} total):**\n{{ ($json.existingTickets || []).slice(0, 15).map((ticket, i) => `${i + 1}. [${ticket.key}] ${ticket.summary}\\n   Status: ${ticket.status} | Components: ${ticket.components}\\n   Description: ${ticket.description}...\\n`).join('\\n') || 'No existing tickets found.' }}\n\n**TASK:**\nAnalyze if the new ticket is a potential duplicate based ONLY on what is actually provided in the ticket. If log files are attached and their content is provided above, use ONLY the actual log file content (error messages, stack traces, etc.) that is present - do not invent errors. If you cannot determine, set isDuplicate to false with low confidence.\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"isDuplicate\": false, \"confidence\": \"low\", \"potentialDuplicates\": [], \"reasoning\": \"Brief explanation based ONLY on what is actually in the ticket\", \"similarityScore\": 0}"
             }
           ]
         },
@@ -306,13 +306,13 @@
           "temperature": 0.2
         }
       },
-      "id": "b6a47443-389b-4ce7-9c36-b54221d6d33e",
+      "id": "146d7001-5a9a-4837-ba05-0431d8d64d73",
       "name": "Check for Duplicates",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        81648,
-        13584
+        86544,
+        20416
       ],
       "credentials": {
         "openAiApi": {
@@ -332,7 +332,7 @@
         "messages": {
           "values": [
             {
-              "content": "=You are an expert bug analyst. You MUST respond with ONLY valid JSON, no explanations or preamble.\n\n**TICKET DETAILS:**\n- Key: {{ $('Prepare Log File Info').item.json.newTicketKey || $('Prepare Data for Analysis').item.json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $('Prepare Log File Info').item.json.newTicketSummary || $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary provided' }}\n- Description: {{ ($('Prepare Log File Info').item.json.newTicketDescription || $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description provided').substring(0, 2000) }}\n- Reporter: {{ $('Prepare Log File Info').item.json.newTicketReporter || $('Prepare Data for Analysis').item.json.newTicketReporter || 'Unknown' }}\n- Current Priority: {{ $('Prepare Log File Info').item.json.newTicketPriority || $('Prepare Data for Analysis').item.json.newTicketPriority || 'None' }}\n- Components: {{ $('Prepare Log File Info').item.json.newTicketComponents || $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n- Labels: {{ $('Prepare Log File Info').item.json.newTicketLabels || $('Prepare Data for Analysis').item.json.newTicketLabels || 'None' }}\n{{ $('Prepare Log File Info').item.json.hasLogFiles ? '\\n\\n**ATTACHED LOG FILES:**\\n' + ($('Prepare Log File Info').item.json.logFileInfo || '') : '' }}\n{{ $('Prepare Log File Info').item.json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 15000 chars):**\\n' + ($('Prepare Log File Info').item.json.logFileContent || '').substring(0, 15000) + '\\n\\nNote: The above log file content contains error messages, stack traces, or debugging information. Use this information to identify the root cause of the bug.' : '' }}\n\nAnalyze this ticket and provide your assessment. Pay special attention to any log files attached - they may contain critical error messages, stack traces, or debugging information that will help identify the root cause. If information is limited, make reasonable assumptions.\n\n**CRITICAL DOCUMENTATION RULES:**\n- DO NOT include any documentation in the relevantDocumentation field unless you have verified it actually exists on https://support.webai.com/hc/en-us\n- DO NOT create, invent, or hallucinate documentation URLs or article titles\n- DO NOT guess or assume documentation exists - if you are not certain, leave relevantDocumentation as an empty array []\n- Only include documentation you have personally verified exists by searching the actual site\n- If you cannot verify documentation exists, you MUST return relevantDocumentation: []\n- All URLs MUST be real, existing URLs from https://support.webai.com/hc/en-us/articles/...\n- Do not make up article titles, URLs, or content\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"summary\": \"Brief summary of the bug\", \"rootCause\": {\"category\": \"Unknown\", \"hypothesis\": \"Best guess at root cause\", \"confidence\": \"low\", \"technicalArea\": \"General\", \"reasoning\": \"Analysis reasoning\"}, \"priority\": {\"recommended\": \"Medium\", \"reasoning\": \"Priority reasoning\", \"factors\": [\"unknown impact\"], \"userImpact\": \"Unknown\", \"urgency\": \"Normal\"}, \"recommendedActions\": [\"Gather more information\", \"Investigate further\"], \"estimatedComplexity\": \"Unknown\", \"relevantDocumentation\": []}"
+              "content": "=You are an expert bug analyst. You MUST respond with ONLY valid JSON, no explanations or preamble.\n\n**CRITICAL: ONLY ANALYZE WHAT IS ACTUALLY PROVIDED**\n- DO NOT invent, hallucinate, or make up errors, issues, or problems that are not explicitly stated in the ticket\n- DO NOT analyze log files for errors that are not actually present in the log content provided\n- ONLY base your analysis on the actual ticket summary, description, and log file content (if provided)\n- If information is missing or unclear, state \"Unknown\" or \"Insufficient information\" - do not make up root causes\n- DO NOT invent error messages, stack traces, or technical issues that are not in the provided content\n\n**TICKET DETAILS:**\n- Key: {{ $('Prepare Log File Info').item.json.newTicketKey || $('Prepare Data for Analysis').item.json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $('Prepare Log File Info').item.json.newTicketSummary || $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary provided' }}\n- Description: {{ ($('Prepare Log File Info').item.json.newTicketDescription || $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description provided').substring(0, 2000) }}\n- Reporter: {{ $('Prepare Log File Info').item.json.newTicketReporter || $('Prepare Data for Analysis').item.json.newTicketReporter || 'Unknown' }}\n- Current Priority: {{ $('Prepare Log File Info').item.json.newTicketPriority || $('Prepare Data for Analysis').item.json.newTicketPriority || 'None' }}\n- Components: {{ $('Prepare Log File Info').item.json.newTicketComponents || $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n- Labels: {{ $('Prepare Log File Info').item.json.newTicketLabels || $('Prepare Data for Analysis').item.json.newTicketLabels || 'None' }}\n{{ $('Prepare Log File Info').item.json.hasLogFiles ? '\\n\\n**ATTACHED LOG FILES:**\\n' + ($('Prepare Log File Info').item.json.logFileInfo || '') : '' }}\n{{ $('Prepare Log File Info').item.json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 15000 chars):**\\n' + ($('Prepare Log File Info').item.json.logFileContent || '').substring(0, 15000) + '\\n\\nNote: The above log file content contains error messages, stack traces, or debugging information. Use ONLY the actual errors present in this content - do not invent errors.' : '' }}\n\nAnalyze this ticket and provide your assessment based ONLY on what is actually provided. Pay special attention to any log files attached - use ONLY the actual error messages, stack traces, or debugging information that is present in the log content. If information is limited, state that clearly - do not make up root causes or errors.\n\n**CRITICAL DOCUMENTATION RULES:**\n- DO NOT include any documentation in the relevantDocumentation field unless you have verified it actually exists on https://support.webai.com/hc/en-us\n- DO NOT create, invent, or hallucinate documentation URLs or article titles\n- DO NOT guess or assume documentation exists - if you are not certain, leave relevantDocumentation as an empty array []\n- Only include documentation you have personally verified exists by searching the actual site\n- If you cannot verify documentation exists, you MUST return relevantDocumentation: []\n- All URLs MUST be real, existing URLs from https://support.webai.com/hc/en-us/articles/...\n- Do not make up article titles, URLs, or content\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"summary\": \"Brief summary of the bug based ONLY on what is provided\", \"rootCause\": {\"category\": \"Unknown\", \"hypothesis\": \"Best guess at root cause based ONLY on provided information\", \"confidence\": \"low\", \"technicalArea\": \"General\", \"reasoning\": \"Analysis reasoning based ONLY on actual ticket content\"}, \"priority\": {\"recommended\": \"Medium\", \"reasoning\": \"Priority reasoning\", \"factors\": [\"unknown impact\"], \"userImpact\": \"Unknown\", \"urgency\": \"Normal\"}, \"recommendedActions\": [\"Gather more information\", \"Investigate further\"], \"estimatedComplexity\": \"Unknown\", \"relevantDocumentation\": []}"
             }
           ]
         },
@@ -340,13 +340,13 @@
           "temperature": 0.3
         }
       },
-      "id": "fa43482e-29be-4b3d-b0c8-eddd9101cd43",
+      "id": "9d137fdb-1a56-4672-b93e-32e9706a478a",
       "name": "Analyze & Categorize Ticket",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        81936,
-        13584
+        86800,
+        20416
       ],
       "credentials": {
         "openAiApi": {
@@ -359,26 +359,26 @@
       "parameters": {
         "jsCode": "// Helper function to extract JSON from text that might have extra content\nfunction extractJSON(text) {\n  if (typeof text !== 'string') return text;\n  \n  // Remove markdown code blocks\n  text = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  // Try to find JSON object in the text\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      return JSON.parse(jsonMatch[0]);\n    } catch (e) {\n      // If that fails, try the whole text\n    }\n  }\n  \n  return JSON.parse(text);\n}\n\n// Get the duplicate check result\nconst duplicateCheckItem = $('Check for Duplicates').item.json;\nlet duplicateCheck;\n\ntry {\n  const content = duplicateCheckItem.message?.content || duplicateCheckItem.text || duplicateCheckItem.content || JSON.stringify(duplicateCheckItem);\n  duplicateCheck = extractJSON(content);\n} catch (e) {\n  duplicateCheck = {\n    isDuplicate: false,\n    confidence: 'low',\n    potentialDuplicates: [],\n    reasoning: 'Could not parse duplicate check response',\n    similarityScore: 0\n  };\n}\n\n// Get the analysis result\nconst analysisItem = $('Analyze & Categorize Ticket').item.json;\nlet analysis;\n\ntry {\n  const content = analysisItem.message?.content || analysisItem.text || analysisItem.content || JSON.stringify(analysisItem);\n  analysis = extractJSON(content);\n} catch (e) {\n  analysis = {\n    summary: 'Could not parse analysis response',\n    rootCause: { category: 'Unknown', hypothesis: 'Unknown', confidence: 'low', technicalArea: 'Unknown', reasoning: 'Parse error' },\n    priority: { recommended: 'Medium', reasoning: 'Default', factors: ['unknown'], userImpact: 'Unknown', urgency: 'Normal' },\n    recommendedActions: ['Review ticket manually'],\n    estimatedComplexity: 'Unknown'\n  };\n}\n\n// Get the help docs search result\nconst helpDocsItem = $input.first().json;\nlet helpDocs;\n\ntry {\n  const content = helpDocsItem.message?.content || helpDocsItem.text || helpDocsItem.content || JSON.stringify(helpDocsItem);\n  helpDocs = extractJSON(content);\n} catch (e) {\n  helpDocs = {\n    foundHelpfulDocs: false,\n    isUserEducationIssue: false,\n    relevantArticles: [],\n    instructions: '',\n    summary: '',\n    recommendedPriority: null\n  };\n}\n\n// Get ticket data\nconst ticketData = $('Prepare Data for Analysis').item.json;\n\n// Determine final priority - if helpful docs found and it's a user education issue, set to Low\nlet finalPriority = analysis.priority?.recommended || 'Medium';\nlet priorityReasoning = analysis.priority?.reasoning || 'No reasoning';\n\nif (helpDocs.foundHelpfulDocs && helpDocs.isUserEducationIssue) {\n  finalPriority = 'Low';\n  priorityReasoning = 'Reduced to Low priority: This appears to be a user education issue. Relevant help documentation was found that addresses this topic.';\n}\n\n// Build help docs instructions for the ticket\nlet helpDocsInstructions = '';\nif (helpDocs.foundHelpfulDocs && helpDocs.instructions) {\n  helpDocsInstructions = '\\n\\n📚 *HELP DOCUMENTATION FOUND*\\n\\n';\n  helpDocsInstructions += helpDocs.summary ? `*Summary:* ${helpDocs.summary}\\n\\n` : '';\n  helpDocsInstructions += `*Instructions:*\\n${helpDocs.instructions}\\n\\n`;\n  if (helpDocs.relevantArticles && helpDocs.relevantArticles.length > 0) {\n    helpDocsInstructions += '*Relevant Articles:*\\n';\n    helpDocs.relevantArticles.forEach((article, i) => {\n      helpDocsInstructions += `${i + 1}. [${article.title}](${article.url})\\n   ${article.relevance}\\n`;\n    });\n  }\n}\n\nreturn {\n  json: {\n    ticketKey: ticketData.newTicketKey,\n    ticketSummary: ticketData.newTicketSummary,\n    ticketDescription: ticketData.newTicketDescription,\n    ticketReporter: ticketData.newTicketReporter,\n    ticketPriority: ticketData.newTicketPriority,\n    ticketComponents: ticketData.newTicketComponents,\n    ticketLabels: ticketData.newTicketLabels,\n    \n    isDuplicate: duplicateCheck.isDuplicate || false,\n    duplicateConfidence: duplicateCheck.confidence || 'low',\n    potentialDuplicates: duplicateCheck.potentialDuplicates || [],\n    duplicateReasoning: duplicateCheck.reasoning || 'No reasoning provided',\n    similarityScore: duplicateCheck.similarityScore || 0,\n    \n    summary: analysis.summary || 'No summary',\n    rootCauseCategory: analysis.rootCause?.category || 'Unknown',\n    rootCauseHypothesis: analysis.rootCause?.hypothesis || 'Unknown',\n    rootCauseConfidence: analysis.rootCause?.confidence || 'low',\n    rootCauseTechnicalArea: analysis.rootCause?.technicalArea || 'Unknown',\n    rootCauseReasoning: analysis.rootCause?.reasoning || 'No reasoning',\n    \n    recommendedPriority: finalPriority,\n    priorityReasoning: priorityReasoning,\n    priorityFactors: analysis.priority?.factors || ['unknown'],\n    userImpact: analysis.priority?.userImpact || 'Unknown',\n    urgency: analysis.priority?.urgency || 'Normal',\n    \n    recommendedActions: analysis.recommendedActions || ['Review manually'],\n    estimatedComplexity: analysis.estimatedComplexity || 'Unknown',\n    \n    // Help docs data\n    foundHelpfulDocs: helpDocs.foundHelpfulDocs || false,\n    isUserEducationIssue: helpDocs.isUserEducationIssue || false,\n    helpDocsInstructions: helpDocsInstructions,\n    helpDocsSummary: helpDocs.summary || '',\n    helpDocsArticles: helpDocs.relevantArticles || [],\n    \n    // Relevant documentation from analysis\n    relevantDocumentation: analysis.relevantDocumentation || []\n  }\n};"
       },
-      "id": "21896e6f-c732-4fe2-b9d8-107ff9db3d85",
+      "id": "8e048072-eecd-422b-be2e-f14f4ade95e8",
       "name": "Merge Analysis Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        82544,
-        13584
+        87408,
+        20416
       ]
     },
     {
       "parameters": {
         "jsCode": "const data = $input.first().json;\n\n// Priority emoji mapping\nconst priorityEmoji = {\n  'Critical': '🔴',\n  'High': '🟠',\n  'Medium': '🟡',\n  'Low': '🟢'\n};\n\nconst emoji = priorityEmoji[data.recommendedPriority] || '⚪';\n\n// Helper to extract ticket key from potential duplicate (might be object or string)\nconst getDuplicateKey = (d) => typeof d === 'object' ? (d.key || JSON.stringify(d)) : d;\n\n// Truncate description for display (but show more)\nconst descriptionPreview = (data.ticketDescription || 'No description provided').substring(0, 500) + (data.ticketDescription && data.ticketDescription.length > 500 ? '...' : '');\n\n// Build Slack blocks\nconst blocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `${emoji} New Bug: ${data.ticketKey || 'Unknown'}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*${data.ticketSummary || 'No summary'}*`\n    },\n    accessory: {\n      type: 'button',\n      text: {\n        type: 'plain_text',\n        text: 'View in Jira',\n        emoji: true\n      },\n      url: `https://${data.jiraBaseUrl || 'webai-dev.atlassian.net'}/browse/${data.ticketKey || 'unknown'}`,\n      action_id: 'view_ticket'\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*📝 Description:*\\n${descriptionPreview}`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    fields: [\n      {\n        type: 'mrkdwn',\n        text: `*📊 Priority:*\\n${emoji} ${data.recommendedPriority || 'Medium'}\\n_(was: ${data.ticketPriority || 'None'})_`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*👤 Reporter:*\\n${data.ticketReporter || 'Unknown'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*🏷️ Components:*\\n${data.ticketComponents || 'None'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*⚙️ Complexity:*\\n${data.estimatedComplexity || 'Unknown'}`\n      }\n    ]\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🔍 Root Cause Analysis:*\\n*Category:* ${data.rootCauseCategory || 'Unknown'} → ${data.rootCauseTechnicalArea || 'General'}\\n*Hypothesis:* ${data.rootCauseHypothesis || 'Unknown'}\\n*Confidence:* ${(data.rootCauseConfidence || 'low').toUpperCase()}\\n\\n_${data.rootCauseReasoning || 'No detailed reasoning available'}_`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🤖 AI Summary:*\\n${data.summary || 'No AI summary available'}`\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*💡 Priority Reasoning:*\\n${data.priorityReasoning || 'No reasoning'}\\n*User Impact:* ${data.userImpact || 'Unknown'} | *Urgency:* ${data.urgency || 'Normal'}`\n    }\n  }\n];\n\n// Add help docs section if found\nif (data.foundHelpfulDocs) {\n  blocks.push(\n    { type: 'divider' },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*📚 HELP DOCUMENTATION FOUND${data.isUserEducationIssue ? ' - User Education Issue' : ''}*\\n\\n${data.helpDocsSummary || 'Documentation available for this issue.'}`\n      }\n    }\n  );\n  \n  // Add relevant articles\n  if (data.helpDocsArticles && data.helpDocsArticles.length > 0) {\n    const articlesText = data.helpDocsArticles.map((article, i) => \n      `${i + 1}. <${article.url}|${article.title}>\\n   _${article.relevance}_`\n    ).join('\\n');\n    \n    blocks.push({\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*Relevant Articles:*\\n${articlesText}`\n      }\n    });\n  }\n}\n\n// Add duplicate warning if applicable\nif (data.isDuplicate && data.potentialDuplicates && data.potentialDuplicates.length > 0) {\n  const confidenceEmoji = { 'high': '🔴', 'medium': '🟡', 'low': '🟢' }[data.duplicateConfidence] || '⚪';\n  blocks.splice(2, 0, \n    { type: 'divider' },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `${confidenceEmoji} *⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ${(data.duplicateConfidence || 'unknown').toUpperCase()} (${data.similarityScore || 0}% similar)\\n*Similar to:* ${data.potentialDuplicates.map(d => { const k = getDuplicateKey(d); return `<https://${data.jiraBaseUrl || 'webai-dev.atlassian.net'}/browse/${k}|${k}>`; }).join(', ')}\\n_${data.duplicateReasoning || 'No reasoning'}_`\n      }\n    }\n  );\n}\n\n// Add recommended actions\nconst actions = data.recommendedActions || ['Review manually'];\nblocks.push(\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*✅ Recommended Actions:*\\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\\n')}`\n    }\n  }\n);\n\nreturn {\n  json: {\n    blocks: blocks,\n    text: `New Bug: ${data.ticketKey || 'Unknown'} - ${data.ticketSummary || 'No summary'}`,\n    ...data\n  }\n};"
       },
-      "id": "3ca7cb5f-892b-4133-bd78-d8bed2895ef8",
+      "id": "4856be58-c906-4fba-8fdc-288353a6a270",
       "name": "Format Slack Message",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        82816,
-        13440
+        87680,
+        20272
       ]
     },
     {
@@ -397,13 +397,13 @@
           "unfurl_media": false
         }
       },
-      "id": "1a0913ea-ed56-4064-b243-dd6a04cf8eb3",
+      "id": "5c4f7ebd-2e04-4a9d-b618-97eeaf02dcfb",
       "name": "Send to Slack",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "position": [
-        83040,
-        13440
+        87904,
+        20272
       ],
       "webhookId": "6966e48e-afe3-4d14-9711-464ab40d744a",
       "credentials": {
@@ -433,13 +433,13 @@
         },
         "options": {}
       },
-      "id": "ea5f32d8-abab-4f16-b6e3-bc3dc5bbb18f",
+      "id": "e6961e17-c06b-492b-a414-5f575fac98e9",
       "name": "Is High-Confidence Duplicate?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        82912,
-        13984
+        87776,
+        20816
       ]
     },
     {
@@ -450,13 +450,13 @@
           "labels": "={{ (() => { const data = $json; const labels = data.ticketLabels || []; const labelArray = Array.isArray(labels) ? labels : (typeof labels === 'string' ? labels.split(', ').filter(l => l.trim()) : []); const filtered = labelArray.filter(l => l && l.trim() !== 'Duplicate' && l.trim() !== 'potential-duplicate'); return [...filtered, 'Duplicate']; })() }}"
         }
       },
-      "id": "0d044bd5-d981-4f8a-9ce6-129bee722ad0",
+      "id": "62131be1-3fc7-4e92-a29d-0d226049a952",
       "name": "Add Duplicate Label",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        83296,
-        14032
+        88160,
+        20864
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -473,13 +473,13 @@
         "comment": "=🤖 *Automated Triage Analysis*\n\n---\n\n{{ $json.isDuplicate ? '*⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ' + ($json.duplicateConfidence || 'unknown').toUpperCase() + ' (' + ($json.similarityScore || 0) + '% similar)\\n*Similar Tickets:* ' + ($json.potentialDuplicates || []).map(d => typeof d === 'object' ? d.key || JSON.stringify(d) : d).join(', ') + '\\n*Reasoning:* ' + ($json.duplicateReasoning || 'N/A') + '\\n\\n---\\n\\n' : '' }}{{ $json.foundHelpfulDocs ? '*📚 HELP DOCUMENTATION FOUND' + ($json.isUserEducationIssue ? ' - USER EDUCATION ISSUE' : '') + '*\\n\\n' + ($json.helpDocsSummary || '') + '\\n\\n' + ($json.helpDocsArticles || []).map((a, i) => (i + 1) + '. [' + (a.title || 'Link').replace(/\\|/g, '') + '|' + a.url + ']\\n   ' + (a.relevance || 'Relevant documentation')).join('\\n') + '\\n\\n---\\n\\n' : '' }}{{ $json.relevantDocumentation && $json.relevantDocumentation.length > 0 ? '*📖 RELEVANT DOCUMENTATION*\\n\\n' + ($json.relevantDocumentation || []).map((a, i) => (i + 1) + '. [' + (a.title || 'Link').replace(/\\|/g, '') + '|' + a.url + ']\\n   ' + (a.relevance || 'Relevant documentation')).join('\\n') + '\\n\\n---\\n\\n' : '' }}*🔍 ROOT CAUSE ANALYSIS*\n*Category:* {{ $json.rootCauseCategory || 'Unknown' }} - {{ $json.rootCauseTechnicalArea || 'General' }}\n*Hypothesis:* {{ $json.rootCauseHypothesis || 'Unknown' }}\n*Confidence:* {{ ($json.rootCauseConfidence || 'low').toUpperCase() }}\n*Analysis:* {{ $json.rootCauseReasoning || 'No analysis available' }}\n\n---\n\n*📊 PRIORITY RECOMMENDATION*\n*Recommended:* {{ $json.recommendedPriority || 'Medium' }} (Current: {{ $json.ticketPriority || 'None' }})\n*Reasoning:* {{ $json.priorityReasoning || 'N/A' }}\n*User Impact:* {{ $json.userImpact || 'Unknown' }}\n*Urgency:* {{ $json.urgency || 'Normal' }}\n*Key Factors:* {{ ($json.priorityFactors || ['unknown']).join(', ') }}\n\n---\n\n*✅ RECOMMENDED ACTIONS*\n{{ ($json.recommendedActions || ['Review manually']).map((action, i) => (i + 1) + '. ' + action).join('\\n') }}\n\n---\n\n*Estimated Complexity:* {{ $json.estimatedComplexity || 'Unknown' }}\n\n_Analysis generated on {{ $now.toISO() }}_",
         "options": {}
       },
-      "id": "51e8322a-d25e-4031-b914-fc294cca364b",
+      "id": "053fdf11-919a-44b3-a49e-db78b2e3327b",
       "name": "Add Jira Comment",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        83072,
-        13648
+        87936,
+        20480
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -497,13 +497,13 @@
           "labels": "={{ Array.isArray($json.ticketLabels) ? [...$json.ticketLabels.filter(l => l !== 'auto-triaged'), 'auto-triaged'] : ($json.ticketLabels ? $json.ticketLabels.split(', ').filter(l => l && l !== 'auto-triaged').concat(['auto-triaged']) : ['auto-triaged']) }}"
         }
       },
-      "id": "7d3a9cc3-f515-4a77-bca4-ea417f80ab67",
+      "id": "713137c3-1490-479d-9f7a-48ecad3450be",
       "name": "Mark as Triaged",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        83280,
-        13648
+        88144,
+        20480
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -515,32 +515,30 @@
     },
     {
       "parameters": {
-        "jsCode": "// Map LLM priority values to Jira priority names\n// Jira instance uses: Lowest, Low, Medium, High, Urgent\nconst data = $input.first().json;\nconst llmPriority = (data.recommendedPriority || 'Medium').trim();\n\n// Map LLM priorities to your Jira instance's priority names\nconst priorityMap = {\n  'Critical': 'Urgent',\n  'Highest': 'Urgent',\n  'Urgent': 'Urgent',\n  'High': 'High',\n  'Medium': 'Medium',\n  'Normal': 'Medium',\n  'Low': 'Low',\n  'Lowest': 'Lowest'\n};\n\n// Try to map, fallback to original if not found\nlet jiraPriority = priorityMap[llmPriority] || llmPriority;\n\n// If still not a standard name, try common alternatives based on keywords\nif (!['Urgent', 'High', 'Medium', 'Low', 'Lowest'].includes(jiraPriority)) {\n  const lowerPriority = llmPriority.toLowerCase();\n  // Map to closest match based on your Jira priorities\n  if (lowerPriority.includes('critical') || lowerPriority.includes('highest') || lowerPriority.includes('urgent') || lowerPriority.includes('blocker')) {\n    jiraPriority = 'Urgent';\n  } else if (lowerPriority.includes('high') || lowerPriority.includes('major')) {\n    jiraPriority = 'High';\n  } else if (lowerPriority.includes('medium') || lowerPriority.includes('normal')) {\n    jiraPriority = 'Medium';\n  } else if (lowerPriority.includes('low')) {\n    // Distinguish between Low and Lowest\n    if (lowerPriority.includes('lowest') || lowerPriority.includes('trivial')) {\n      jiraPriority = 'Lowest';\n    } else {\n      jiraPriority = 'Low';\n    }\n  } else {\n    jiraPriority = 'Medium'; // Default fallback\n  }\n}\n\nreturn {\n  json: {\n    ...data,\n    jiraPriority: jiraPriority,\n    originalPriority: llmPriority\n  }\n};"
+        "jsCode": "// Map LLM priority values to Jira priority IDs\n// Jira priority mapping: 1 = Lowest, 2 = Low, 3 = Medium, 4 = High, 5 = Urgent\nconst data = $input.first().json;\nconst llmPriority = (data.recommendedPriority || 'Medium').trim();\n\n// Map LLM priorities to Jira priority IDs (1-5)\nconst priorityMap = {\n  'Critical': '5',\n  'Highest': '5',\n  'Urgent': '5',\n  'urgent': '5',\n  'High': '4',\n  'high': '4',\n  'Medium': '3',\n  'medium': '3',\n  'Normal': '3',\n  'Low': '2',\n  'low': '2',\n  'Lowest': '1',\n  'lowest': '1'\n};\n\n// Try to map, fallback to Medium (3) if not found\nlet jiraPriorityId = priorityMap[llmPriority] || '3';\n\n// If still not mapped, try common alternatives based on keywords\nif (!['1', '2', '3', '4', '5'].includes(jiraPriorityId)) {\n  const lowerPriority = llmPriority.toLowerCase();\n  // Map to closest match based on priority levels\n  if (lowerPriority.includes('critical') || lowerPriority.includes('highest') || lowerPriority.includes('urgent') || lowerPriority.includes('blocker')) {\n    jiraPriorityId = '5'; // Urgent\n  } else if (lowerPriority.includes('high') || lowerPriority.includes('major')) {\n    jiraPriorityId = '4'; // High\n  } else if (lowerPriority.includes('medium') || lowerPriority.includes('normal')) {\n    jiraPriorityId = '3'; // Medium\n  } else if (lowerPriority.includes('low')) {\n    // Distinguish between Low and Lowest\n    if (lowerPriority.includes('lowest') || lowerPriority.includes('trivial')) {\n      jiraPriorityId = '1'; // Lowest\n    } else {\n      jiraPriorityId = '2'; // Low\n    }\n  } else {\n    jiraPriorityId = '3'; // Default fallback to Medium\n  }\n}\n\nreturn {\n  json: {\n    ...data,\n    jiraPriority: jiraPriorityId,\n    originalPriority: llmPriority\n  }\n};"
       },
-      "id": "62e3fd4b-d5eb-4246-9c51-ceb73febff58",
+      "id": "87bd5731-af39-4eb3-98a0-72e6c4eeeec1",
       "name": "Map Priority to Jira Format",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        83280,
-        13856
+        88144,
+        20688
       ]
     },
     {
       "parameters": {
         "operation": "get",
         "issueKey": "={{ $json.ticketKey || $('Map Priority to Jira Format').item.json.ticketKey || $('Merge Analysis Results').item.json.ticketKey || $('Jira Trigger - New Bug Created').item.json.issue?.key || $('Jira Trigger - New Bug Created').item.json.key }}",
-        "options": {
-          "fields": "priority"
-        }
+        "additionalFields": {}
       },
-      "id": "g1h2i3j4-k5l6-7890-mnop-qrst56789012",
+      "id": "c254ddc2-3f6c-4189-8b71-56bde08efcb1",
       "name": "Get Issue for Priority",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        83424,
-        13856
+        88288,
+        20688
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -552,19 +550,30 @@
     },
     {
       "parameters": {
-        "operation": "update",
-        "issueKey": "={{ $json.ticketKey || $('Map Priority to Jira Format').item.json.ticketKey || $('Merge Analysis Results').item.json.ticketKey || $('Jira Trigger - New Bug Created').item.json.issue?.key || $('Jira Trigger - New Bug Created').item.json.key }}",
-        "updateFields": {
-          "priority": "={{ { name: String($('Map Priority to Jira Format').item.json.jiraPriority || $('Map Priority to Jira Format').item.json.recommendedPriority || 'Medium').trim() } }}"
-        }
+        "jsCode": "// Prepare priority updateFields object for Jira API\n// Get data from Map Priority to Jira Format node\nconst mappedData = $('Map Priority to Jira Format').item.json;\nconst priorityId = String(mappedData.jiraPriority || '3');\nconst ticketKey = mappedData.ticketKey || $('Merge Analysis Results').item.json.ticketKey || $('Jira Trigger - New Bug Created').item.json.issue?.key || $('Jira Trigger - New Bug Created').item.json.key;\n\n// Create the updateFields object in the format Jira expects\nreturn {\n  json: {\n    ticketKey: ticketKey,\n    priorityUpdateFields: {\n      priority: {\n        id: priorityId\n      }\n    }\n  }\n};"
       },
-      "id": "427edd1e-f9a3-4254-ae30-3e955ceb6a27",
+      "id": "53239d5b-f073-4ed9-8e2f-c516118bf04f",
+      "name": "Prepare Priority Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        88432,
+        20688
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "issueKey": "={{ $('Prepare Priority Update').item.json.ticketKey }}",
+        "updateFields": {}
+      },
+      "id": "53eb0784-7923-43bf-ab3d-c1e46e438631",
       "name": "Update Priority",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        83552,
-        13872
+        88608,
+        20688
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -593,13 +602,13 @@
           "temperature": 0.2
         }
       },
-      "id": "697dcd73-f87e-413f-9e7a-595df7cb9be6",
+      "id": "4e5d9d65-79d7-4dd9-8f65-3bbb25f3a2d3",
       "name": "Search Help Docs",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        82240,
-        13584
+        87104,
+        20416
       ],
       "credentials": {
         "openAiApi": {
@@ -806,6 +815,17 @@
       "main": [
         [
           {
+            "node": "Prepare Priority Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Priority Update": {
+      "main": [
+        [
+          {
             "node": "Update Priority",
             "type": "main",
             "index": 0
@@ -840,7 +860,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "3b58167e-6fa9-46e8-b513-2a86956afd6c",
+  "versionId": "665afa92-9a43-41ec-8aaf-bd7bbde697e2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f77e25729e52ebbbe315e49d8be45ec253824ba87b956c4a449129aca2bf1fb9"
