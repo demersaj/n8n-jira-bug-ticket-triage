@@ -232,7 +232,7 @@
           "mode": "name"
         },
         "messageType": "block",
-        "blocksUi": "={{ JSON.stringify($json.blocks) }}",
+        "blocksUi": "={{ JSON.stringify({ blocks: $json.blocks }) }}",
         "text": "={{ $json.text }}",
         "otherOptions": {
           "unfurl_links": false,
