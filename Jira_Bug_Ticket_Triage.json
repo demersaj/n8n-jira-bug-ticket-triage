@@ -8,13 +8,13 @@
         ],
         "additionalFields": {}
       },
-      "id": "89ae9fd4-4dbd-4863-b421-1bdb123be33c",
+      "id": "25290adf-f437-49af-8488-8383f5ede490",
       "name": "Jira Trigger - New Bug Created1",
       "type": "n8n-nodes-base.jiraTrigger",
       "typeVersion": 1,
       "position": [
-        496,
-        720
+        15616,
+        5648
       ],
       "webhookId": "jira-bug-webhook",
       "alwaysOutputData": false,
@@ -36,13 +36,13 @@
           "jql": "=project in (PRODBUGS, DEVBUGS, \"Andrew Bug Test\") AND issuetype = Bug AND status != Closed AND status != Resolved AND created >= -90d ORDER BY created DESC"
         }
       },
-      "id": "45a14edd-bd2d-4eb2-baf2-40fca3106513",
+      "id": "07890e21-5b36-4519-8c33-97ec921f077b",
       "name": "Get Recent Bug Tickets1",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        720,
-        720
+        15840,
+        5648
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -107,26 +107,26 @@
         },
         "options": {}
       },
-      "id": "65eea042-6527-4c22-ad2d-2dd0d9f553f7",
+      "id": "2caadff3-c5a6-4dab-9003-a3b680109872",
       "name": "Extract New Ticket Data1",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.3,
       "position": [
-        944,
-        720
+        16064,
+        5648
       ]
     },
     {
       "parameters": {
         "jsCode": "// Get the new ticket data from Set node\nconst newTicket = $input.first().json;\nconst newTicketKey = newTicket.newTicketKey;\n\n// Get all existing tickets from Get Recent Bug Tickets node, EXCLUDING the new ticket\nconst existingTickets = $('Get Recent Bug Tickets1').all()\n  .filter(item => item.json.key !== newTicketKey) // Filter out the new ticket\n  .map(item => ({\n    key: item.json.key,\n    summary: item.json.fields.summary,\n    description: (item.json.fields.description || '').substring(0, 300),\n    status: item.json.fields.status.name,\n    components: item.json.fields.components?.map(c => c.name).join(', ') || 'None',\n    labels: item.json.fields.labels?.join(', ') || 'None',\n    created: item.json.fields.created\n  }));\n\nreturn {\n  json: {\n    newTicketKey: newTicket.newTicketKey,\n    newTicketSummary: newTicket.newTicketSummary,\n    newTicketDescription: newTicket.newTicketDescription,\n    newTicketReporter: newTicket.newTicketReporter,\n    newTicketPriority: newTicket.newTicketPriority,\n    newTicketComponents: newTicket.newTicketComponents,\n    newTicketLabels: newTicket.newTicketLabels,\n    existingTickets: existingTickets,\n    existingTicketsCount: existingTickets.length\n  }\n};"
       },
-      "id": "965f4d91-9f96-4518-b254-7f57727f572f",
+      "id": "a7b426ea-cba1-4c76-a8b7-4bf62b03e5c8",
       "name": "Prepare Data for Analysis1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1168,
-        720
+        16288,
+        5648
       ]
     },
     {
@@ -148,13 +148,13 @@
           "temperature": 0.2
         }
       },
-      "id": "17b9171a-a297-4c42-af36-bfe772ae4c8e",
+      "id": "c66de8f0-1985-4cc2-a315-e816eca184eb",
       "name": "Check for Duplicates1",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        1392,
-        720
+        16512,
+        5648
       ],
       "credentials": {
         "openAiApi": {
@@ -182,13 +182,13 @@
           "temperature": 0.3
         }
       },
-      "id": "99061b2b-5c81-4993-9c9b-e031aa9045d1",
+      "id": "5e1f9ab5-28b4-48ea-b55d-83893f043ca0",
       "name": "Analyze & Categorize Ticket1",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        1616,
-        720
+        16736,
+        5648
       ],
       "credentials": {
         "openAiApi": {
@@ -199,28 +199,28 @@
     },
     {
       "parameters": {
-        "jsCode": "// Helper function to extract JSON from text that might have extra content\nfunction extractJSON(text) {\n  if (typeof text !== 'string') return text;\n  \n  // Remove markdown code blocks\n  text = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  // Try to find JSON object in the text\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      return JSON.parse(jsonMatch[0]);\n    } catch (e) {\n      // If that fails, try the whole text\n    }\n  }\n  \n  return JSON.parse(text);\n}\n\n// Get the duplicate check result\nconst duplicateCheckItem = $('Check for Duplicates1').item.json;\nlet duplicateCheck;\n\ntry {\n  const content = duplicateCheckItem.message?.content || duplicateCheckItem.text || duplicateCheckItem.content || JSON.stringify(duplicateCheckItem);\n  duplicateCheck = extractJSON(content);\n} catch (e) {\n  // Default if parsing fails\n  duplicateCheck = {\n    isDuplicate: false,\n    confidence: 'low',\n    potentialDuplicates: [],\n    reasoning: 'Could not parse duplicate check response',\n    similarityScore: 0\n  };\n}\n\n// Get the analysis result\nconst analysisItem = $input.first().json;\nlet analysis;\n\ntry {\n  const content = analysisItem.message?.content || analysisItem.text || analysisItem.content || JSON.stringify(analysisItem);\n  analysis = extractJSON(content);\n} catch (e) {\n  // Default if parsing fails\n  analysis = {\n    summary: 'Could not parse analysis response',\n    rootCause: { category: 'Unknown', hypothesis: 'Unknown', confidence: 'low', technicalArea: 'Unknown', reasoning: 'Parse error' },\n    priority: { recommended: 'Medium', reasoning: 'Default', factors: ['unknown'], userImpact: 'Unknown', urgency: 'Normal' },\n    recommendedActions: ['Review ticket manually'],\n    estimatedComplexity: 'Unknown'\n  };\n}\n\n// Get ticket data\nconst ticketData = $('Prepare Data for Analysis1').item.json;\n\nreturn {\n  json: {\n    ticketKey: ticketData.newTicketKey,\n    ticketSummary: ticketData.newTicketSummary,\n    ticketDescription: ticketData.newTicketDescription,\n    ticketReporter: ticketData.newTicketReporter,\n    ticketPriority: ticketData.newTicketPriority,\n    ticketComponents: ticketData.newTicketComponents,\n    ticketLabels: ticketData.newTicketLabels,\n    \n    isDuplicate: duplicateCheck.isDuplicate || false,\n    duplicateConfidence: duplicateCheck.confidence || 'low',\n    potentialDuplicates: duplicateCheck.potentialDuplicates || [],\n    duplicateReasoning: duplicateCheck.reasoning || 'No reasoning provided',\n    similarityScore: duplicateCheck.similarityScore || 0,\n    \n    summary: analysis.summary || 'No summary',\n    rootCauseCategory: analysis.rootCause?.category || 'Unknown',\n    rootCauseHypothesis: analysis.rootCause?.hypothesis || 'Unknown',\n    rootCauseConfidence: analysis.rootCause?.confidence || 'low',\n    rootCauseTechnicalArea: analysis.rootCause?.technicalArea || 'Unknown',\n    rootCauseReasoning: analysis.rootCause?.reasoning || 'No reasoning',\n    \n    recommendedPriority: analysis.priority?.recommended || 'Medium',\n    priorityReasoning: analysis.priority?.reasoning || 'No reasoning',\n    priorityFactors: analysis.priority?.factors || ['unknown'],\n    userImpact: analysis.priority?.userImpact || 'Unknown',\n    urgency: analysis.priority?.urgency || 'Normal',\n    \n    recommendedActions: analysis.recommendedActions || ['Review manually'],\n    estimatedComplexity: analysis.estimatedComplexity || 'Unknown'\n  }\n};"
+        "jsCode": "// Helper function to extract JSON from text that might have extra content\nfunction extractJSON(text) {\n  if (typeof text !== 'string') return text;\n  \n  // Remove markdown code blocks\n  text = text.replace(/```json\\n?/g, '').replace(/```\\n?/g, '').trim();\n  \n  // Try to find JSON object in the text\n  const jsonMatch = text.match(/\\{[\\s\\S]*\\}/);\n  if (jsonMatch) {\n    try {\n      return JSON.parse(jsonMatch[0]);\n    } catch (e) {\n      // If that fails, try the whole text\n    }\n  }\n  \n  return JSON.parse(text);\n}\n\n// Get the duplicate check result\nconst duplicateCheckItem = $('Check for Duplicates1').item.json;\nlet duplicateCheck;\n\ntry {\n  const content = duplicateCheckItem.message?.content || duplicateCheckItem.text || duplicateCheckItem.content || JSON.stringify(duplicateCheckItem);\n  duplicateCheck = extractJSON(content);\n} catch (e) {\n  duplicateCheck = {\n    isDuplicate: false,\n    confidence: 'low',\n    potentialDuplicates: [],\n    reasoning: 'Could not parse duplicate check response',\n    similarityScore: 0\n  };\n}\n\n// Get the analysis result\nconst analysisItem = $('Analyze & Categorize Ticket1').item.json;\nlet analysis;\n\ntry {\n  const content = analysisItem.message?.content || analysisItem.text || analysisItem.content || JSON.stringify(analysisItem);\n  analysis = extractJSON(content);\n} catch (e) {\n  analysis = {\n    summary: 'Could not parse analysis response',\n    rootCause: { category: 'Unknown', hypothesis: 'Unknown', confidence: 'low', technicalArea: 'Unknown', reasoning: 'Parse error' },\n    priority: { recommended: 'Medium', reasoning: 'Default', factors: ['unknown'], userImpact: 'Unknown', urgency: 'Normal' },\n    recommendedActions: ['Review ticket manually'],\n    estimatedComplexity: 'Unknown'\n  };\n}\n\n// Get the help docs search result\nconst helpDocsItem = $input.first().json;\nlet helpDocs;\n\ntry {\n  const content = helpDocsItem.message?.content || helpDocsItem.text || helpDocsItem.content || JSON.stringify(helpDocsItem);\n  helpDocs = extractJSON(content);\n} catch (e) {\n  helpDocs = {\n    foundHelpfulDocs: false,\n    isUserEducationIssue: false,\n    relevantArticles: [],\n    instructions: '',\n    summary: '',\n    recommendedPriority: null\n  };\n}\n\n// Get ticket data\nconst ticketData = $('Prepare Data for Analysis1').item.json;\n\n// Determine final priority - if helpful docs found and it's a user education issue, set to Low\nlet finalPriority = analysis.priority?.recommended || 'Medium';\nlet priorityReasoning = analysis.priority?.reasoning || 'No reasoning';\n\nif (helpDocs.foundHelpfulDocs && helpDocs.isUserEducationIssue) {\n  finalPriority = 'Low';\n  priorityReasoning = 'Reduced to Low priority: This appears to be a user education issue. Relevant help documentation was found that addresses this topic.';\n}\n\n// Build help docs instructions for the ticket\nlet helpDocsInstructions = '';\nif (helpDocs.foundHelpfulDocs && helpDocs.instructions) {\n  helpDocsInstructions = '\\n\\n📚 *HELP DOCUMENTATION FOUND*\\n\\n';\n  helpDocsInstructions += helpDocs.summary ? `*Summary:* ${helpDocs.summary}\\n\\n` : '';\n  helpDocsInstructions += `*Instructions:*\\n${helpDocs.instructions}\\n\\n`;\n  if (helpDocs.relevantArticles && helpDocs.relevantArticles.length > 0) {\n    helpDocsInstructions += '*Relevant Articles:*\\n';\n    helpDocs.relevantArticles.forEach((article, i) => {\n      helpDocsInstructions += `${i + 1}. [${article.title}](${article.url})\\n   ${article.relevance}\\n`;\n    });\n  }\n}\n\nreturn {\n  json: {\n    ticketKey: ticketData.newTicketKey,\n    ticketSummary: ticketData.newTicketSummary,\n    ticketDescription: ticketData.newTicketDescription,\n    ticketReporter: ticketData.newTicketReporter,\n    ticketPriority: ticketData.newTicketPriority,\n    ticketComponents: ticketData.newTicketComponents,\n    ticketLabels: ticketData.newTicketLabels,\n    \n    isDuplicate: duplicateCheck.isDuplicate || false,\n    duplicateConfidence: duplicateCheck.confidence || 'low',\n    potentialDuplicates: duplicateCheck.potentialDuplicates || [],\n    duplicateReasoning: duplicateCheck.reasoning || 'No reasoning provided',\n    similarityScore: duplicateCheck.similarityScore || 0,\n    \n    summary: analysis.summary || 'No summary',\n    rootCauseCategory: analysis.rootCause?.category || 'Unknown',\n    rootCauseHypothesis: analysis.rootCause?.hypothesis || 'Unknown',\n    rootCauseConfidence: analysis.rootCause?.confidence || 'low',\n    rootCauseTechnicalArea: analysis.rootCause?.technicalArea || 'Unknown',\n    rootCauseReasoning: analysis.rootCause?.reasoning || 'No reasoning',\n    \n    recommendedPriority: finalPriority,\n    priorityReasoning: priorityReasoning,\n    priorityFactors: analysis.priority?.factors || ['unknown'],\n    userImpact: analysis.priority?.userImpact || 'Unknown',\n    urgency: analysis.priority?.urgency || 'Normal',\n    \n    recommendedActions: analysis.recommendedActions || ['Review manually'],\n    estimatedComplexity: analysis.estimatedComplexity || 'Unknown',\n    \n    // Help docs data\n    foundHelpfulDocs: helpDocs.foundHelpfulDocs || false,\n    isUserEducationIssue: helpDocs.isUserEducationIssue || false,\n    helpDocsInstructions: helpDocsInstructions,\n    helpDocsSummary: helpDocs.summary || '',\n    helpDocsArticles: helpDocs.relevantArticles || []\n  }\n};"
       },
-      "id": "284c4d75-9e0c-4de5-9b00-8d2c799fff73",
+      "id": "405570af-b2dd-474d-9a36-aad46100ebca",
       "name": "Merge Analysis Results1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        1840,
-        720
+        17184,
+        5648
       ]
     },
     {
       "parameters": {
-        "jsCode": "const data = $input.first().json;\n\n// Priority emoji mapping\nconst priorityEmoji = {\n  'Critical': '🔴',\n  'High': '🟠',\n  'Medium': '🟡',\n  'Low': '🟢'\n};\n\nconst emoji = priorityEmoji[data.recommendedPriority] || '⚪';\n\n// Helper to extract ticket key from potential duplicate (might be object or string)\nconst getDuplicateKey = (d) => typeof d === 'object' ? (d.key || JSON.stringify(d)) : d;\n\n// Truncate description for display (but show more)\nconst descriptionPreview = (data.ticketDescription || 'No description provided').substring(0, 500) + (data.ticketDescription && data.ticketDescription.length > 500 ? '...' : '');\n\n// Build Slack blocks\nconst blocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `${emoji} New Bug: ${data.ticketKey || 'Unknown'}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*${data.ticketSummary || 'No summary'}*`\n    },\n    accessory: {\n      type: 'button',\n      text: {\n        type: 'plain_text',\n        text: 'View in Jira',\n        emoji: true\n      },\n      url: `https://YOUR-DOMAIN.atlassian.net/browse/${data.ticketKey || 'unknown'}`,\n      action_id: 'view_ticket'\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*📝 Description:*\\n${descriptionPreview}`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    fields: [\n      {\n        type: 'mrkdwn',\n        text: `*📊 Priority:*\\n${emoji} ${data.recommendedPriority || 'Medium'}\\n_(was: ${data.ticketPriority || 'None'})_`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*👤 Reporter:*\\n${data.ticketReporter || 'Unknown'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*🏷️ Components:*\\n${data.ticketComponents || 'None'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*⚙️ Complexity:*\\n${data.estimatedComplexity || 'Unknown'}`\n      }\n    ]\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🔍 Root Cause Analysis:*\\n*Category:* ${data.rootCauseCategory || 'Unknown'} → ${data.rootCauseTechnicalArea || 'General'}\\n*Hypothesis:* ${data.rootCauseHypothesis || 'Unknown'}\\n*Confidence:* ${(data.rootCauseConfidence || 'low').toUpperCase()}\\n\\n_${data.rootCauseReasoning || 'No detailed reasoning available'}_`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🤖 AI Summary:*\\n${data.summary || 'No AI summary available'}`\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*💡 Priority Reasoning:*\\n${data.priorityReasoning || 'No reasoning'}\\n*User Impact:* ${data.userImpact || 'Unknown'} | *Urgency:* ${data.urgency || 'Normal'}`\n    }\n  }\n];\n\n// Add duplicate warning if applicable\nif (data.isDuplicate && data.potentialDuplicates && data.potentialDuplicates.length > 0) {\n  const confidenceEmoji = { 'high': '🔴', 'medium': '🟡', 'low': '🟢' }[data.duplicateConfidence] || '⚪';\n  blocks.splice(2, 0, \n    { type: 'divider' },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `${confidenceEmoji} *⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ${(data.duplicateConfidence || 'unknown').toUpperCase()} (${data.similarityScore || 0}% similar)\\n*Similar to:* ${data.potentialDuplicates.map(d => { const k = getDuplicateKey(d); return `<https://YOUR-DOMAIN.atlassian.net/browse/${k}|${k}>`; }).join(', ')}\\n_${data.duplicateReasoning || 'No reasoning'}_`\n      }\n    }\n  );\n}\n\n// Add recommended actions\nconst actions = data.recommendedActions || ['Review manually'];\nblocks.push(\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*✅ Recommended Actions:*\\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\\n')}`\n    }\n  }\n);\n\nreturn {\n  json: {\n    blocks: blocks,\n    text: `New Bug: ${data.ticketKey || 'Unknown'} - ${data.ticketSummary || 'No summary'}`,\n    ...data\n  }\n};"
+        "jsCode": "const data = $input.first().json;\n\n// Priority emoji mapping\nconst priorityEmoji = {\n  'Critical': '🔴',\n  'High': '🟠',\n  'Medium': '🟡',\n  'Low': '🟢'\n};\n\nconst emoji = priorityEmoji[data.recommendedPriority] || '⚪';\n\n// Helper to extract ticket key from potential duplicate (might be object or string)\nconst getDuplicateKey = (d) => typeof d === 'object' ? (d.key || JSON.stringify(d)) : d;\n\n// Truncate description for display (but show more)\nconst descriptionPreview = (data.ticketDescription || 'No description provided').substring(0, 500) + (data.ticketDescription && data.ticketDescription.length > 500 ? '...' : '');\n\n// Build Slack blocks\nconst blocks = [\n  {\n    type: 'header',\n    text: {\n      type: 'plain_text',\n      text: `${emoji} New Bug: ${data.ticketKey || 'Unknown'}`,\n      emoji: true\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*${data.ticketSummary || 'No summary'}*`\n    },\n    accessory: {\n      type: 'button',\n      text: {\n        type: 'plain_text',\n        text: 'View in Jira',\n        emoji: true\n      },\n      url: `https://YOUR-DOMAIN.atlassian.net/browse/${data.ticketKey || 'unknown'}`,\n      action_id: 'view_ticket'\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*📝 Description:*\\n${descriptionPreview}`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    fields: [\n      {\n        type: 'mrkdwn',\n        text: `*📊 Priority:*\\n${emoji} ${data.recommendedPriority || 'Medium'}\\n_(was: ${data.ticketPriority || 'None'})_`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*👤 Reporter:*\\n${data.ticketReporter || 'Unknown'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*🏷️ Components:*\\n${data.ticketComponents || 'None'}`\n      },\n      {\n        type: 'mrkdwn',\n        text: `*⚙️ Complexity:*\\n${data.estimatedComplexity || 'Unknown'}`\n      }\n    ]\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🔍 Root Cause Analysis:*\\n*Category:* ${data.rootCauseCategory || 'Unknown'} → ${data.rootCauseTechnicalArea || 'General'}\\n*Hypothesis:* ${data.rootCauseHypothesis || 'Unknown'}\\n*Confidence:* ${(data.rootCauseConfidence || 'low').toUpperCase()}\\n\\n_${data.rootCauseReasoning || 'No detailed reasoning available'}_`\n    }\n  },\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*🤖 AI Summary:*\\n${data.summary || 'No AI summary available'}`\n    }\n  },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*💡 Priority Reasoning:*\\n${data.priorityReasoning || 'No reasoning'}\\n*User Impact:* ${data.userImpact || 'Unknown'} | *Urgency:* ${data.urgency || 'Normal'}`\n    }\n  }\n];\n\n// Add help docs section if found\nif (data.foundHelpfulDocs) {\n  blocks.push(\n    { type: 'divider' },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*📚 HELP DOCUMENTATION FOUND${data.isUserEducationIssue ? ' - User Education Issue' : ''}*\\n\\n${data.helpDocsSummary || 'Documentation available for this issue.'}`\n      }\n    }\n  );\n  \n  // Add relevant articles\n  if (data.helpDocsArticles && data.helpDocsArticles.length > 0) {\n    const articlesText = data.helpDocsArticles.map((article, i) => \n      `${i + 1}. <${article.url}|${article.title}>\\n   _${article.relevance}_`\n    ).join('\\n');\n    \n    blocks.push({\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `*Relevant Articles:*\\n${articlesText}`\n      }\n    });\n  }\n}\n\n// Add duplicate warning if applicable\nif (data.isDuplicate && data.potentialDuplicates && data.potentialDuplicates.length > 0) {\n  const confidenceEmoji = { 'high': '🔴', 'medium': '🟡', 'low': '🟢' }[data.duplicateConfidence] || '⚪';\n  blocks.splice(2, 0, \n    { type: 'divider' },\n    {\n      type: 'section',\n      text: {\n        type: 'mrkdwn',\n        text: `${confidenceEmoji} *⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ${(data.duplicateConfidence || 'unknown').toUpperCase()} (${data.similarityScore || 0}% similar)\\n*Similar to:* ${data.potentialDuplicates.map(d => { const k = getDuplicateKey(d); return `<https://YOUR-DOMAIN.atlassian.net/browse/${k}|${k}>`; }).join(', ')}\\n_${data.duplicateReasoning || 'No reasoning'}_`\n      }\n    }\n  );\n}\n\n// Add recommended actions\nconst actions = data.recommendedActions || ['Review manually'];\nblocks.push(\n  { type: 'divider' },\n  {\n    type: 'section',\n    text: {\n      type: 'mrkdwn',\n      text: `*✅ Recommended Actions:*\\n${actions.map((a, i) => `${i + 1}. ${a}`).join('\\n')}`\n    }\n  }\n);\n\nreturn {\n  json: {\n    blocks: blocks,\n    text: `New Bug: ${data.ticketKey || 'Unknown'} - ${data.ticketSummary || 'No summary'}`,\n    ...data\n  }\n};"
       },
-      "id": "6cab6427-7980-4934-a732-4359be75e985",
+      "id": "0669dc20-e437-4ad9-aec2-4852ea16636e",
       "name": "Format Slack Message1",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2064,
-        720
+        17408,
+        5648
       ]
     },
     {
@@ -232,20 +232,20 @@
           "mode": "name"
         },
         "messageType": "block",
-        "blocksUi": "={{ $json.blocks }}",
+        "blocksUi": "={{ JSON.stringify($json.blocks) }}",
         "text": "={{ $json.text }}",
         "otherOptions": {
           "unfurl_links": false,
           "unfurl_media": false
         }
       },
-      "id": "6f21c908-3dd0-4e20-b4ba-7059b695a1b4",
+      "id": "ff97d696-73f3-43c4-9a56-aafbe2807e19",
       "name": "Send to Slack1",
       "type": "n8n-nodes-base.slack",
       "typeVersion": 2.2,
       "position": [
-        2288,
-        720
+        17632,
+        5648
       ],
       "webhookId": "6966e48e-afe3-4d14-9711-464ab40d744a",
       "credentials": {
@@ -284,13 +284,13 @@
         },
         "options": {}
       },
-      "id": "624a3225-0c91-456d-b74e-dffe45351af5",
+      "id": "5b367751-5a9e-45a0-9c96-68e4a51511b9",
       "name": "Is High-Confidence Duplicate?1",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        2288,
-        944
+        17632,
+        5872
       ]
     },
     {
@@ -301,13 +301,13 @@
           "labels": "={{ Array.isArray($json.ticketLabels) ? [...$json.ticketLabels, 'potential-duplicate'] : ($json.ticketLabels ? $json.ticketLabels.split(', ').filter(l => l).concat(['potential-duplicate']) : ['potential-duplicate']) }}"
         }
       },
-      "id": "17973015-4da6-4be0-b73c-f806dcdf7e34",
+      "id": "73165d4d-6022-4d22-a91c-84495d7e7b6f",
       "name": "Add Duplicate Label1",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        2592,
-        896
+        17936,
+        5824
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -321,16 +321,16 @@
       "parameters": {
         "resource": "issueComment",
         "issueKey": "={{ $json.ticketKey }}",
-        "comment": "=🤖 *Automated Triage Analysis*\n\n---\n\n{{ $json.isDuplicate ? '*⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ' + ($json.duplicateConfidence || 'unknown').toUpperCase() + ' (' + ($json.similarityScore || 0) + '% similar)\\n*Similar Tickets:* ' + ($json.potentialDuplicates || []).map(d => typeof d === 'object' ? d.key || JSON.stringify(d) : d).join(', ') + '\\n*Reasoning:* ' + ($json.duplicateReasoning || 'N/A') + '\\n\\n---\\n\\n' : '' }}*🔍 ROOT CAUSE ANALYSIS*\n*Category:* {{ $json.rootCauseCategory || 'Unknown' }} - {{ $json.rootCauseTechnicalArea || 'General' }}\n*Hypothesis:* {{ $json.rootCauseHypothesis || 'Unknown' }}\n*Confidence:* {{ ($json.rootCauseConfidence || 'low').toUpperCase() }}\n*Analysis:* {{ $json.rootCauseReasoning || 'No analysis available' }}\n\n---\n\n*📊 PRIORITY RECOMMENDATION*\n*Recommended:* {{ $json.recommendedPriority || 'Medium' }} (Current: {{ $json.ticketPriority || 'None' }})\n*Reasoning:* {{ $json.priorityReasoning || 'N/A' }}\n*User Impact:* {{ $json.userImpact || 'Unknown' }}\n*Urgency:* {{ $json.urgency || 'Normal' }}\n*Key Factors:* {{ ($json.priorityFactors || ['unknown']).join(', ') }}\n\n---\n\n*✅ RECOMMENDED ACTIONS*\n{{ ($json.recommendedActions || ['Review manually']).map((action, i) => (i + 1) + '. ' + action).join('\\n') }}\n\n---\n\n*Estimated Complexity:* {{ $json.estimatedComplexity || 'Unknown' }}\n\n_Analysis generated on {{ $now.toISO() }}_",
+        "comment": "=🤖 *Automated Triage Analysis*\n\n---\n\n{{ $json.isDuplicate ? '*⚠️ POTENTIAL DUPLICATE DETECTED*\\n*Confidence:* ' + ($json.duplicateConfidence || 'unknown').toUpperCase() + ' (' + ($json.similarityScore || 0) + '% similar)\\n*Similar Tickets:* ' + ($json.potentialDuplicates || []).map(d => typeof d === 'object' ? d.key || JSON.stringify(d) : d).join(', ') + '\\n*Reasoning:* ' + ($json.duplicateReasoning || 'N/A') + '\\n\\n---\\n\\n' : '' }}{{ $json.foundHelpfulDocs ? '*📚 HELP DOCUMENTATION FOUND' + ($json.isUserEducationIssue ? ' - USER EDUCATION ISSUE' : '') + '*\\n\\n' + ($json.helpDocsSummary || '') + '\\n\\n' + ($json.helpDocsArticles || []).map((a, i) => (i + 1) + '. [' + a.title + '](' + a.url + ')\\n   ' + a.relevance).join('\\n') + '\\n\\n---\\n\\n' : '' }}*🔍 ROOT CAUSE ANALYSIS*\n*Category:* {{ $json.rootCauseCategory || 'Unknown' }} - {{ $json.rootCauseTechnicalArea || 'General' }}\n*Hypothesis:* {{ $json.rootCauseHypothesis || 'Unknown' }}\n*Confidence:* {{ ($json.rootCauseConfidence || 'low').toUpperCase() }}\n*Analysis:* {{ $json.rootCauseReasoning || 'No analysis available' }}\n\n---\n\n*📊 PRIORITY RECOMMENDATION*\n*Recommended:* {{ $json.recommendedPriority || 'Medium' }} (Current: {{ $json.ticketPriority || 'None' }})\n*Reasoning:* {{ $json.priorityReasoning || 'N/A' }}\n*User Impact:* {{ $json.userImpact || 'Unknown' }}\n*Urgency:* {{ $json.urgency || 'Normal' }}\n*Key Factors:* {{ ($json.priorityFactors || ['unknown']).join(', ') }}\n\n---\n\n*✅ RECOMMENDED ACTIONS*\n{{ ($json.recommendedActions || ['Review manually']).map((action, i) => (i + 1) + '. ' + action).join('\\n') }}\n\n---\n\n*Estimated Complexity:* {{ $json.estimatedComplexity || 'Unknown' }}\n\n_Analysis generated on {{ $now.toISO() }}_",
         "options": {}
       },
-      "id": "07d9554c-2208-426a-b791-a2a61bb2689c",
+      "id": "1cb0e3ec-90e6-4451-b19e-3c280d866299",
       "name": "Add Jira Comment1",
       "type": "n8n-nodes-base.jira",
       "typeVersion": 1,
       "position": [
-        2592,
-        1056
+        17936,
+        5984
       ],
       "credentials": {
         "jiraSoftwareCloudApi": {
@@ -339,6 +339,40 @@
         }
       },
       "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-4-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a support documentation specialist. Search the webAI help documentation to find relevant articles that might help resolve this bug.\n\n**BUG DETAILS:**\n- Summary: {{ $('Prepare Data for Analysis1').item.json.newTicketSummary || 'No summary' }}\n- Description: {{ $('Prepare Data for Analysis1').item.json.newTicketDescription || 'No description' }}\n- Components: {{ $('Prepare Data for Analysis1').item.json.newTicketComponents || 'None' }}\n\n**HELP DOCUMENTATION SITE:** https://support.webai.com/hc/en-us\n\n**TASK:**\n1. Based on the bug summary and description, identify key topics/features mentioned\n2. Search for relevant help articles that could assist in resolving or understanding this issue\n3. If you find helpful documentation, provide step-by-step instructions from those docs\n4. Determine if this is a user education issue (can be resolved with docs) vs a real bug\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"foundHelpfulDocs\": true, \"isUserEducationIssue\": true, \"relevantArticles\": [{\"title\": \"Article Title\", \"url\": \"https://support.webai.com/hc/en-us/articles/...\", \"relevance\": \"Why this helps\"}], \"instructions\": \"Step-by-step instructions from the docs to resolve this issue\", \"summary\": \"Brief summary of what the docs say about this topic\", \"recommendedPriority\": \"Low\"}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "6115ab2c-7258-40db-902e-7ff7828898aa",
+      "name": "Search Help Docs",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        16960,
+        5856
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "LmN9WpOK1xEtISHT",
+          "name": "OpenAi account"
+        }
+      }
     }
   ],
   "pinData": {},
@@ -402,6 +436,17 @@
       "main": [
         [
           {
+            "node": "Search Help Docs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search Help Docs": {
+      "main": [
+        [
+          {
             "node": "Merge Analysis Results1",
             "type": "main",
             "index": 0
@@ -432,6 +477,11 @@
             "node": "Is High-Confidence Duplicate?1",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Add Jira Comment1",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -443,11 +493,6 @@
             "node": "Add Duplicate Label1",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Add Jira Comment1",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -457,7 +502,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "59a8d57d-788a-4302-9002-9da5bc041973",
+  "versionId": "bdc244de-309a-4241-b79d-e1a5a0122860",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "f77e25729e52ebbbe315e49d8be45ec253824ba87b956c4a449129aca2bf1fb9"
