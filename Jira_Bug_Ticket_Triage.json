@@ -58,6 +58,35 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "combineOperation": "all"
+          },
+          "conditions": [
+            {
+              "id": "not_already_triaged",
+              "leftValue": "={{ Array.isArray($json.fields?.labels) ? $json.fields.labels.includes('auto-triaged') : ($json.fields?.labels ? $json.fields.labels.split(', ').includes('auto-triaged') : false) }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c4d5e6f7-a8b9-0123-cdef-456789012345",
+      "name": "Check if Already Triaged",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        15840,
+        5648
+      ]
+    },
+    {
+      "parameters": {
         "operation": "getAll",
         "returnAll": true,
         "options": {
@@ -379,9 +408,46 @@
     {
       "parameters": {
         "operation": "update",
+        "issueKey": "={{ $json.ticketKey || $('Merge Analysis Results').item.json.ticketKey || $('Jira Trigger - New Bug Created').item.json.key || $input.first().json.key }}",
+        "updateFields": {
+          "labels": "={{ Array.isArray($json.ticketLabels) ? [...$json.ticketLabels.filter(l => l !== 'auto-triaged'), 'auto-triaged'] : ($json.ticketLabels ? $json.ticketLabels.split(', ').filter(l => l && l !== 'auto-triaged').concat(['auto-triaged']) : ['auto-triaged']) }}"
+        }
+      },
+      "id": "d5e6f7a8-b9c0-1234-def5-678901234567",
+      "name": "Mark as Triaged",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        18160,
+        5984
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "v9NVSPaZW8j1aT2F",
+          "name": "Jira SW Cloud account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Map LLM priority values to Jira priority names\nconst data = $input.first().json;\nconst llmPriority = (data.recommendedPriority || 'Medium').trim();\n\n// Common Jira priority name mappings\n// Try common variations - adjust these to match your Jira instance\nconst priorityMap = {\n  'Critical': 'Highest',  // or 'Critical', 'Blocker' - adjust as needed\n  'High': 'High',\n  'Medium': 'Medium',\n  'Low': 'Low',\n  'Lowest': 'Lowest'\n};\n\n// Try to map, fallback to original if not found\nlet jiraPriority = priorityMap[llmPriority] || llmPriority;\n\n// If still not a standard name, try common alternatives\nif (!['Highest', 'High', 'Medium', 'Low', 'Lowest', 'Critical', 'Blocker', 'Major', 'Minor', 'Trivial'].includes(jiraPriority)) {\n  // Map to closest match\n  if (llmPriority.toLowerCase().includes('critical') || llmPriority.toLowerCase().includes('highest')) {\n    jiraPriority = 'Highest';\n  } else if (llmPriority.toLowerCase().includes('high')) {\n    jiraPriority = 'High';\n  } else if (llmPriority.toLowerCase().includes('medium') || llmPriority.toLowerCase().includes('normal')) {\n    jiraPriority = 'Medium';\n  } else if (llmPriority.toLowerCase().includes('low')) {\n    jiraPriority = 'Low';\n  } else {\n    jiraPriority = 'Medium'; // Default fallback\n  }\n}\n\nreturn {\n  json: {\n    ...data,\n    jiraPriority: jiraPriority,\n    originalPriority: llmPriority\n  }\n};"
+      },
+      "id": "f1a2b3c4-d5e6-7890-fabc-def123456789",
+      "name": "Map Priority to Jira Format",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        18160,
+        6176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "update",
         "issueKey": "={{ $json.ticketKey }}",
         "updateFields": {
-          "priority": "={{ { name: String($json.recommendedPriority || 'Medium').trim() } }}"
+          "priority": "={{ String($json.jiraPriority || $json.recommendedPriority || 'Medium').trim() }}"
         }
       },
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
@@ -411,7 +477,7 @@
         "messages": {
           "values": [
             {
-              "content": "=You are a support documentation specialist. Search the webAI help documentation to find relevant articles that might help resolve this bug.\n\n**BUG DETAILS:**\n- Summary: {{ $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary' }}\n- Description: {{ $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description' }}\n- Components: {{ $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n\n**HELP DOCUMENTATION SITE:** https://support.webai.com/hc/en-us\n\n**TASK:**\n1. Based on the bug summary and description, identify key topics/features mentioned\n2. Search for relevant help articles that could assist in resolving or understanding this issue\n3. If you find helpful documentation, provide step-by-step instructions from those docs\n4. Determine if this is a user education issue (can be resolved with docs) vs a real bug\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"foundHelpfulDocs\": true, \"isUserEducationIssue\": true, \"relevantArticles\": [{\"title\": \"Article Title\", \"url\": \"https://support.webai.com/hc/en-us/articles/...\", \"relevance\": \"Why this helps\"}], \"instructions\": \"Step-by-step instructions from the docs to resolve this issue\", \"summary\": \"Brief summary of what the docs say about this topic\", \"recommendedPriority\": \"Low\"}"
+              "content": "=You are a support documentation specialist with access to search and browse ALL documentation on https://support.webai.com/hc/en-us. You MUST search through the ENTIRE documentation site to find relevant articles.\n\n**CRITICAL RULES:**\n- You MUST actively search and browse https://support.webai.com/hc/en-us to find relevant documentation\n- Search through ALL categories, sections, and articles on the site\n- DO NOT create, invent, or hallucinate documentation URLs or articles\n- DO NOT return foundHelpfulDocs: true unless you can verify the documentation actually exists on the site\n- If you cannot find real documentation after searching the site, you MUST return foundHelpfulDocs: false\n- All URLs MUST be real, existing URLs from https://support.webai.com/hc/en-us/articles/...\n- Do not make up article titles, URLs, or content\n- Only return articles you can verify exist by searching the actual documentation site\n\n**BUG DETAILS:**\n- Summary: {{ $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary' }}\n- Description: {{ $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description' }}\n- Components: {{ $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n\n**DOCUMENTATION SITE TO SEARCH:** https://support.webai.com/hc/en-us\n\n**SEARCH INSTRUCTIONS:**\n1. Search through ALL sections of https://support.webai.com/hc/en-us\n2. Look in categories like: Getting Started, API Documentation, Troubleshooting, Features, etc.\n3. Search for articles related to the bug topics, features, or error messages mentioned\n4. Browse through article lists and categories to find relevant documentation\n5. Verify each article URL actually exists on the site before including it\n\n**TASK:**\n1. Based on the bug summary and description, identify key topics/features/errors mentioned\n2. SEARCH the entire https://support.webai.com/hc/en-us documentation site for relevant articles\n3. ONLY if you find REAL, EXISTING help articles that are actually on the site, return them\n4. If NO real documentation exists after searching, return foundHelpfulDocs: false\n5. If you find helpful documentation, provide step-by-step instructions from those ACTUAL docs\n6. Determine if this is a user education issue (can be resolved with docs) vs a real bug\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\nIf documentation exists: {\"foundHelpfulDocs\": true, \"isUserEducationIssue\": true, \"relevantArticles\": [{\"title\": \"Actual Article Title from the site\", \"url\": \"https://support.webai.com/hc/en-us/articles/ACTUAL-ARTICLE-ID\", \"relevance\": \"Why this helps\"}], \"instructions\": \"Step-by-step instructions from the actual docs\", \"summary\": \"Brief summary of what the docs say\", \"recommendedPriority\": \"Low\"}\nIf NO documentation exists after searching: {\"foundHelpfulDocs\": false, \"isUserEducationIssue\": false, \"relevantArticles\": [], \"instructions\": \"\", \"summary\": \"\", \"recommendedPriority\": null}"
             }
           ]
         },
@@ -449,6 +515,17 @@
       ]
     },
     "Check if Bug Ticket": {
+      "main": [
+        [
+          {
+            "node": "Check if Already Triaged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Already Triaged": {
       "main": [
         [
           {
@@ -529,7 +606,7 @@
       "main": [
         [
           {
-            "node": "Update Priority",
+            "node": "Map Priority to Jira Format",
             "type": "main",
             "index": 0
           },
@@ -540,6 +617,28 @@
           },
           {
             "node": "Add Jira Comment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Jira Comment": {
+      "main": [
+        [
+          {
+            "node": "Mark as Triaged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Priority to Jira Format": {
+      "main": [
+        [
+          {
+            "node": "Update Priority",
             "type": "main",
             "index": 0
           }
