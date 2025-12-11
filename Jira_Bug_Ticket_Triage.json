@@ -36,7 +36,7 @@
           "conditions": [
             {
               "id": "is_bug",
-              "leftValue": "={{ $json.fields?.issuetype?.name || $json.issuetype?.name || '' }}",
+              "leftValue": "={{ $json.issue?.fields?.issuetype?.name || $json.fields?.issuetype?.name || $json.issuetype?.name || $json.body?.issue?.fields?.issuetype?.name || $json.body?.fields?.issuetype?.name || '' }}",
               "rightValue": "Bug",
               "operator": {
                 "type": "string",
@@ -65,7 +65,7 @@
           "conditions": [
             {
               "id": "not_already_triaged",
-              "leftValue": "={{ Array.isArray($json.fields?.labels) ? $json.fields.labels.includes('auto-triaged') : ($json.fields?.labels ? $json.fields.labels.split(', ').includes('auto-triaged') : false) }}",
+              "leftValue": "={{ (() => { const labels = $json.issue?.fields?.labels || $json.fields?.labels || $json.body?.issue?.fields?.labels || $json.body?.fields?.labels || []; return Array.isArray(labels) ? labels.includes('auto-triaged') : (labels ? labels.split(', ').includes('auto-triaged') : false); })() }}",
               "rightValue": false,
               "operator": {
                 "type": "boolean",
@@ -87,10 +87,34 @@
     },
     {
       "parameters": {
+        "operation": "update",
+        "issueKey": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.key || $('Jira Trigger - New Bug Created').item.json.key || $input.first().json.issue?.key || $input.first().json.key }}",
+        "updateFields": {
+          "labels": "={{ (() => { const labels = $input.first().json.issue?.fields?.labels || $input.first().json.fields?.labels || $input.first().json.body?.issue?.fields?.labels || $input.first().json.body?.fields?.labels || []; return Array.isArray(labels) ? [...labels.filter(l => l !== 'auto-triaged'), 'auto-triaged'] : (labels ? labels.split(', ').filter(l => l && l !== 'auto-triaged').concat(['auto-triaged']) : ['auto-triaged']); })() }}"
+        }
+      },
+      "id": "e6f7a8b9-c0d1-2345-ef67-890123456789",
+      "name": "Mark as Processing",
+      "type": "n8n-nodes-base.jira",
+      "typeVersion": 1,
+      "position": [
+        15952,
+        5648
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "v9NVSPaZW8j1aT2F",
+          "name": "Jira SW Cloud account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
         "operation": "getAll",
         "returnAll": true,
         "options": {
-          "fields": "summary,description,status,created,reporter,priority,components,labels,updated",
+          "fields": "summary,description,status,created,reporter,priority,components,labels,updated,attachment",
           "jql": "=project in (PRODBUGS, DEVBUGS, \"Andrew Bug Test\") AND issuetype = Bug AND status != Closed AND status != Resolved AND created >= -90d ORDER BY created DESC"
         }
       },
@@ -117,43 +141,43 @@
             {
               "id": "new_ticket_key",
               "name": "newTicketKey",
-              "value": "={{ $input.first().json.key || $input.first().json.issue?.key || 'TEST-000' }}",
+              "value": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.key || $('Jira Trigger - New Bug Created').item.json.key || $input.first().json.issue?.key || $input.first().json.key || 'TEST-000' }}",
               "type": "string"
             },
             {
               "id": "new_ticket_summary",
               "name": "newTicketSummary",
-              "value": "={{ $input.first().json.fields?.summary || $input.first().json.issue?.fields?.summary || 'Test ticket summary' }}",
+              "value": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.fields?.summary || $('Jira Trigger - New Bug Created').item.json.fields?.summary || $input.first().json.issue?.fields?.summary || $input.first().json.fields?.summary || 'Test ticket summary' }}",
               "type": "string"
             },
             {
               "id": "new_ticket_description",
               "name": "newTicketDescription",
-              "value": "={{ $input.first().json.fields?.description || $input.first().json.renderedFields?.description || $input.first().json.issue?.fields?.description || $input.first().json.issue?.renderedFields?.description || 'No description provided' }}",
+              "value": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.renderedFields?.description || $('Jira Trigger - New Bug Created').item.json.issue?.fields?.description || $('Jira Trigger - New Bug Created').item.json.renderedFields?.description || $('Jira Trigger - New Bug Created').item.json.fields?.description || $input.first().json.issue?.renderedFields?.description || $input.first().json.issue?.fields?.description || $input.first().json.renderedFields?.description || $input.first().json.fields?.description || 'No description provided' }}",
               "type": "string"
             },
             {
               "id": "new_ticket_reporter",
               "name": "newTicketReporter",
-              "value": "={{ $input.first().json.fields?.reporter?.displayName || $input.first().json.issue?.fields?.reporter?.displayName || 'Unknown' }}",
+              "value": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.fields?.reporter?.displayName || $('Jira Trigger - New Bug Created').item.json.fields?.reporter?.displayName || $input.first().json.issue?.fields?.reporter?.displayName || $input.first().json.fields?.reporter?.displayName || 'Unknown' }}",
               "type": "string"
             },
             {
               "id": "new_ticket_priority",
               "name": "newTicketPriority",
-              "value": "={{ $input.first().json.fields?.priority?.name || $input.first().json.issue?.fields?.priority?.name || 'None' }}",
+              "value": "={{ $('Jira Trigger - New Bug Created').item.json.issue?.fields?.priority?.name || $('Jira Trigger - New Bug Created').item.json.fields?.priority?.name || $input.first().json.issue?.fields?.priority?.name || $input.first().json.fields?.priority?.name || 'None' }}",
               "type": "string"
             },
             {
               "id": "new_ticket_components",
               "name": "newTicketComponents",
-              "value": "={{ ($input.first().json.fields?.components || $input.first().json.issue?.fields?.components || []).map(c => c.name).join(', ') || 'None' }}",
+              "value": "={{ (() => { const components = $('Jira Trigger - New Bug Created').item.json.issue?.fields?.components || $('Jira Trigger - New Bug Created').item.json.fields?.components || $input.first().json.issue?.fields?.components || $input.first().json.fields?.components || []; return components.map(c => c.name).join(', ') || 'None'; })() }}",
               "type": "string"
             },
             {
               "id": "new_ticket_labels",
               "name": "newTicketLabels",
-              "value": "={{ ($input.first().json.fields?.labels || $input.first().json.issue?.fields?.labels || []).join(', ') || 'None' }}",
+              "value": "={{ (() => { const labels = $('Jira Trigger - New Bug Created').item.json.issue?.fields?.labels || $('Jira Trigger - New Bug Created').item.json.fields?.labels || $input.first().json.issue?.fields?.labels || $input.first().json.fields?.labels || []; return Array.isArray(labels) ? labels.join(', ') : (labels || 'None'); })() }}",
               "type": "string"
             },
             {
@@ -165,7 +189,13 @@
             {
               "id": "jira_base_url",
               "name": "jiraBaseUrl",
-              "value": "=webai-dev.atlassian.net",
+              "value": "={{ (() => { const self = $('Jira Trigger - New Bug Created').item.json.issue?.self || $('Jira Trigger - New Bug Created').item.json.self || $input.first().json.issue?.self || $input.first().json.self || ''; const match = self.match(/https?:\\/\\/([^.]+)\\.atlassian\\.net/); return match ? match[1] + '.atlassian.net' : 'webai-dev.atlassian.net'; })() }}",
+              "type": "string"
+            },
+            {
+              "id": "new_ticket_attachments",
+              "name": "newTicketAttachments",
+              "value": "={{ JSON.stringify($('Jira Trigger - New Bug Created').item.json.issue?.fields?.attachment || $('Jira Trigger - New Bug Created').item.json.fields?.attachment || $input.first().json.issue?.fields?.attachment || $input.first().json.fields?.attachment || []) }}",
               "type": "string"
             }
           ]
@@ -183,7 +213,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Get the new ticket data from Extract New Ticket Data node\nconst newTicket = $('Extract New Ticket Data').item.json;\nconst newTicketKey = newTicket.newTicketKey;\n\n// Get all existing tickets from Get Recent Bug Tickets node, EXCLUDING the new ticket\nconst existingTickets = $input.all()\n  .filter(item => item.json.key !== newTicketKey) // Filter out the new ticket\n  .map(item => ({\n    key: item.json.key,\n    summary: item.json.fields.summary,\n    description: (item.json.fields.description || '').substring(0, 300),\n    status: item.json.fields.status.name,\n    components: item.json.fields.components?.map(c => c.name).join(', ') || 'None',\n    labels: item.json.fields.labels?.join(', ') || 'None',\n    created: item.json.fields.created\n  }));\n\nreturn {\n  json: {\n    newTicketKey: newTicket.newTicketKey,\n    newTicketSummary: newTicket.newTicketSummary,\n    newTicketDescription: newTicket.newTicketDescription,\n    newTicketReporter: newTicket.newTicketReporter,\n    newTicketPriority: newTicket.newTicketPriority,\n    newTicketComponents: newTicket.newTicketComponents,\n    newTicketLabels: newTicket.newTicketLabels,\n    jiraBaseUrl: newTicket.jiraBaseUrl,\n    existingTickets: existingTickets,\n    existingTicketsCount: existingTickets.length\n  }\n};"
+        "jsCode": "// Get the new ticket data from Extract New Ticket Data node\nconst newTicket = $('Extract New Ticket Data').item.json;\nconst newTicketKey = newTicket.newTicketKey;\n\n// Debug: Log the extracted data to help troubleshoot\n// console.log('Extracted ticket data:', JSON.stringify(newTicket, null, 2));\n\n// Get all existing tickets from Get Recent Bug Tickets node, EXCLUDING the new ticket\nconst existingTickets = $input.all()\n  .filter(item => item.json.key !== newTicketKey) // Filter out the new ticket\n  .map(item => ({\n    key: item.json.key,\n    summary: item.json.fields.summary,\n    description: (item.json.fields.description || '').substring(0, 300),\n    status: item.json.fields.status.name,\n    components: item.json.fields.components?.map(c => c.name).join(', ') || 'None',\n    labels: item.json.fields.labels?.join(', ') || 'None',\n    created: item.json.fields.created\n  }));\n\n// Parse attachments and identify log files\nconst attachments = newTicket.newTicketAttachments ? (typeof newTicket.newTicketAttachments === 'string' ? JSON.parse(newTicket.newTicketAttachments) : newTicket.newTicketAttachments) : [];\nconst logFileExtensions = ['.log', '.txt', '.out', '.err', '.debug', '.trace'];\nconst logFiles = attachments.filter(att => {\n  const filename = (att.filename || att.name || '').toLowerCase();\n  return logFileExtensions.some(ext => filename.endsWith(ext)) || \n         filename.includes('log') || \n         filename.includes('error') || \n         filename.includes('debug');\n}).slice(0, 3); // Limit to first 3 log files\n\nreturn {\n  json: {\n    newTicketKey: newTicket.newTicketKey,\n    newTicketSummary: newTicket.newTicketSummary,\n    newTicketDescription: newTicket.newTicketDescription,\n    newTicketReporter: newTicket.newTicketReporter,\n    newTicketPriority: newTicket.newTicketPriority,\n    newTicketComponents: newTicket.newTicketComponents,\n    newTicketLabels: newTicket.newTicketLabels,\n    newTicketAttachments: attachments,\n    logFiles: logFiles,\n    hasLogFiles: logFiles.length > 0,\n    jiraBaseUrl: newTicket.jiraBaseUrl,\n    existingTickets: existingTickets,\n    existingTicketsCount: existingTickets.length\n  }\n};"
       },
       "id": "a7b426ea-cba1-4c76-a8b7-4bf62b03e5c8",
       "name": "Prepare Data for Analysis",
@@ -213,12 +243,87 @@
           "temperature": 0.2
         }
       },
+      "id": "k1l2m3n4-o5p6-7890-qrst-uvwx90123456",
+      "name": "Fetch Log File Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16400,
+        5648
+      ],
+      "parameters": {
+        "jsCode": "// Pass through ticket data with log file information\nreturn $input.all().map(item => ({ json: item.json }));"
+      }
+    },
+    {
+      "parameters": {
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "jiraSoftwareCloudApi",
+        "method": "GET",
+        "url": "={{ $json.logFiles && $json.logFiles.length > 0 && $json.logFiles[0].content ? $json.logFiles[0].content : '' }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "text",
+              "fullResponse": false
+            }
+          }
+        }
+      },
+      "id": "m3n4o5p6-q7r8-9012-stuv-wxyz12345678",
+      "name": "Download Log File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16464,
+        5648
+      ],
+      "credentials": {
+        "jiraSoftwareCloudApi": {
+          "id": "v9NVSPaZW8j1aT2F",
+          "name": "Jira SW Cloud account"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Combine log file content with ticket data\n// Get ticket data from Prepare Data for Analysis (before log file download)\nconst ticketData = $('Prepare Data for Analysis').item.json;\nconst logContent = $input.first().json;\n\n// Extract log content (limit to 30000 chars to avoid token limits)\nlet logFileContent = '';\nif (logContent && typeof logContent === 'string') {\n  logFileContent = logContent.substring(0, 30000);\n} else if (logContent && logContent.body) {\n  logFileContent = String(logContent.body).substring(0, 30000);\n} else if (logContent && typeof logContent === 'object') {\n  logFileContent = JSON.stringify(logContent).substring(0, 30000);\n}\n\n// Prepare log file info\nconst logFiles = ticketData.logFiles || [];\nlet logFileInfo = '';\nif (logFiles.length > 0) {\n  logFileInfo = logFiles.map((file, idx) => {\n    return `${idx + 1}. ${file.filename || 'unknown'} (${file.size || 0} bytes)`;\n  }).join('\\n');\n}\n\nreturn {\n  json: {\n    ...ticketData,\n    logFileContent: logFileContent,\n    logFileInfo: logFileInfo,\n    hasLogContent: logFileContent.length > 0,\n    logFileCount: logFiles.length\n  }\n};"
+      },
+      "id": "l2m3n4o5-p6q7-8901-rstu-vwxy01234567",
+      "name": "Prepare Log File Info",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        16512,
+        5648
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-4-TURBO"
+        },
+        "messages": {
+          "values": [ 
+            {
+              "content": "=You are a bug triage assistant analyzing potential duplicate tickets. You MUST respond with ONLY valid JSON, no explanations.\n\n**NEW TICKET:**\n- Key: {{ $json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $json.newTicketSummary || 'No summary' }}\n- Description: {{ ($json.newTicketDescription || 'No description').substring(0, 500) }}\n- Components: {{ $json.newTicketComponents || 'None' }}\n- Labels: {{ $json.newTicketLabels || 'None' }}\n{{ $json.hasLogFiles ? '\\n- Log Files Attached (' + $json.logFileCount + '):\\n' + $json.logFileInfo : '' }}\n{{ $json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 10000 chars):**\\n' + ($json.logFileContent || '').substring(0, 10000) : '' }}\n\n**EXISTING TICKETS (Last 90 days, {{ $json.existingTicketsCount || 0 }} total):**\n{{ ($json.existingTickets || []).slice(0, 15).map((ticket, i) => `${i + 1}. [${ticket.key}] ${ticket.summary}\\n   Status: ${ticket.status} | Components: ${ticket.components}\\n   Description: ${ticket.description}...\\n`).join('\\n') || 'No existing tickets found.' }}\n\n**TASK:**\nAnalyze if the new ticket is a potential duplicate. If log files are attached and their content is provided above, use the log file content (error messages, stack traces, etc.) to help identify similar issues. If you cannot determine, set isDuplicate to false with low confidence.\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"isDuplicate\": false, \"confidence\": \"low\", \"potentialDuplicates\": [], \"reasoning\": \"Brief explanation\", \"similarityScore\": 0}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2
+        }
+      },
       "id": "c66de8f0-1985-4cc2-a315-e816eca184eb",
       "name": "Check for Duplicates",
       "type": "@n8n/n8n-nodes-langchain.openAi",
       "typeVersion": 1.4,
       "position": [
-        16512,
+        16624,
         5648
       ],
       "credentials": {
@@ -239,7 +344,7 @@
         "messages": {
           "values": [
             {
-              "content": "=You are an expert bug analyst. You MUST respond with ONLY valid JSON, no explanations or preamble.\n\n**TICKET DETAILS:**\n- Key: {{ $('Prepare Data for Analysis').item.json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary provided' }}\n- Description: {{ $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description provided' }}\n- Reporter: {{ $('Prepare Data for Analysis').item.json.newTicketReporter || 'Unknown' }}\n- Current Priority: {{ $('Prepare Data for Analysis').item.json.newTicketPriority || 'None' }}\n- Components: {{ $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n- Labels: {{ $('Prepare Data for Analysis').item.json.newTicketLabels || 'None' }}\n\nAnalyze this ticket and provide your assessment. If information is limited, make reasonable assumptions.\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"summary\": \"Brief summary of the bug\", \"rootCause\": {\"category\": \"Unknown\", \"hypothesis\": \"Best guess at root cause\", \"confidence\": \"low\", \"technicalArea\": \"General\", \"reasoning\": \"Analysis reasoning\"}, \"priority\": {\"recommended\": \"Medium\", \"reasoning\": \"Priority reasoning\", \"factors\": [\"unknown impact\"], \"userImpact\": \"Unknown\", \"urgency\": \"Normal\"}, \"recommendedActions\": [\"Gather more information\", \"Investigate further\"], \"estimatedComplexity\": \"Unknown\"}"
+              "content": "=You are an expert bug analyst. You MUST respond with ONLY valid JSON, no explanations or preamble.\n\n**TICKET DETAILS:**\n- Key: {{ $('Prepare Log File Info').item.json.newTicketKey || $('Prepare Data for Analysis').item.json.newTicketKey || 'UNKNOWN' }}\n- Summary: {{ $('Prepare Log File Info').item.json.newTicketSummary || $('Prepare Data for Analysis').item.json.newTicketSummary || 'No summary provided' }}\n- Description: {{ ($('Prepare Log File Info').item.json.newTicketDescription || $('Prepare Data for Analysis').item.json.newTicketDescription || 'No description provided').substring(0, 2000) }}\n- Reporter: {{ $('Prepare Log File Info').item.json.newTicketReporter || $('Prepare Data for Analysis').item.json.newTicketReporter || 'Unknown' }}\n- Current Priority: {{ $('Prepare Log File Info').item.json.newTicketPriority || $('Prepare Data for Analysis').item.json.newTicketPriority || 'None' }}\n- Components: {{ $('Prepare Log File Info').item.json.newTicketComponents || $('Prepare Data for Analysis').item.json.newTicketComponents || 'None' }}\n- Labels: {{ $('Prepare Log File Info').item.json.newTicketLabels || $('Prepare Data for Analysis').item.json.newTicketLabels || 'None' }}\n{{ $('Prepare Log File Info').item.json.hasLogFiles ? '\\n\\n**ATTACHED LOG FILES:**\\n' + ($('Prepare Log File Info').item.json.logFileInfo || '') : '' }}\n{{ $('Prepare Log File Info').item.json.hasLogContent ? '\\n\\n**LOG FILE CONTENT (First 15000 chars):**\\n' + ($('Prepare Log File Info').item.json.logFileContent || '').substring(0, 15000) + '\\n\\nNote: The above log file content contains error messages, stack traces, or debugging information. Use this information to identify the root cause of the bug.' : '' }}\n\nAnalyze this ticket and provide your assessment. Pay special attention to any log files attached - they may contain critical error messages, stack traces, or debugging information that will help identify the root cause. If information is limited, make reasonable assumptions.\n\n**YOU MUST RESPOND WITH ONLY THIS JSON FORMAT - NO OTHER TEXT:**\n{\"summary\": \"Brief summary of the bug\", \"rootCause\": {\"category\": \"Unknown\", \"hypothesis\": \"Best guess at root cause\", \"confidence\": \"low\", \"technicalArea\": \"General\", \"reasoning\": \"Analysis reasoning\"}, \"priority\": {\"recommended\": \"Medium\", \"reasoning\": \"Priority reasoning\", \"factors\": [\"unknown impact\"], \"userImpact\": \"Unknown\", \"urgency\": \"Normal\"}, \"recommendedActions\": [\"Gather more information\", \"Investigate further\"], \"estimatedComplexity\": \"Unknown\"}"
             }
           ]
         },
@@ -446,9 +551,7 @@
       "parameters": {
         "operation": "update",
         "issueKey": "={{ $json.ticketKey }}",
-        "updateFields": {
-          "priority": "={{ String($json.jiraPriority || $json.recommendedPriority || 'Medium').trim() }}"
-        }
+        "updateFields": {}
       },
       "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
       "name": "Update Priority",
@@ -529,6 +632,17 @@
       "main": [
         [
           {
+            "node": "Mark as Processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark as Processing": {
+      "main": [
+        [
+          {
             "node": "Extract New Ticket Data",
             "type": "main",
             "index": 0
@@ -559,6 +673,39 @@
       ]
     },
     "Prepare Data for Analysis": {
+      "main": [
+        [
+          {
+            "node": "Fetch Log File Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Log File Content": {
+      "main": [
+        [
+          {
+            "node": "Download Log File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Log File": {
+      "main": [
+        [
+          {
+            "node": "Prepare Log File Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Log File Info": {
       "main": [
         [
           {
@@ -619,6 +766,11 @@
             "node": "Add Jira Comment",
             "type": "main",
             "index": 0
+          },
+          {
+            "node": "Is High-Confidence Duplicate?",
+            "type": "main",
+            "index": 0
           }
         ]
       ]
@@ -647,13 +799,7 @@
     },
     "Update Priority": {
       "main": [
-        [
-          {
-            "node": "Format Slack Message",
-            "type": "main",
-            "index": 0
-          }
-        ]
+        []
       ]
     },
     "Format Slack Message": {
@@ -661,11 +807,6 @@
         [
           {
             "node": "Send to Slack",
-            "type": "main",
-            "index": 0
-          },
-          {
-            "node": "Is High-Confidence Duplicate?",
             "type": "main",
             "index": 0
           }
