@@ -119,9 +119,6 @@ The workflow maps LLM priority recommendations to these Jira priority names:
 - High (ID: 4)
 - Urgent (ID: 5)
 
-### Ignored Projects
-Tickets from the "IT" project are automatically ignored, even if they're bug tickets.
-
 ## Requirements
 
 - n8n instance with Jira and Slack integrations configured
